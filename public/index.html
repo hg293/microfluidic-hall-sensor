@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>µFlow — 3D Microfluidic Hall Sensor Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060a14;--card:#0d1424;--card-border:#1a2540;
+  --primary:#06b6d4;--primary-dim:#0e7490;
+  --signal:#22c55e;--bead:#f59e0b;
+  --sensor:#a78bfa;--sensor-bright:#c4b5fd;
+  --text:#e2e8f0;--muted:#64748b;--subtle:#1e293b;
+  --danger:#ef4444;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+#root{height:100%}
+.app{display:grid;grid-template-columns:280px 1fr;grid-template-rows:48px 1fr 200px;height:100%}
+.header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(13,20,36,0.9);border-bottom:1px solid var(--card-border);backdrop-filter:blur(8px);z-index:10}
+.header h1{font-size:14px;font-weight:600;letter-spacing:0.5px}
+.header h1 span.brand{color:var(--primary)}
+.header .sub{font-size:10px;color:var(--muted);margin-left:8px;font-weight:400}
+.metrics{display:flex;gap:20px}
+.metric{text-align:right}
+.metric-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px}
+.metric-value{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--primary)}
+.metric-value.g{color:var(--signal)}.metric-value.b{color:var(--bead)}.metric-value.r{color:var(--danger)}
+.sidebar{overflow-y:auto;padding:10px;border-right:1px solid var(--card-border);background:rgba(10,16,30,0.95);z-index:5;grid-row:2/4}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:2px}
+.group{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(30,41,59,0.5)}
+.group:last-child{border-bottom:none}
+.group-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:6px}
+.slider-row{margin-bottom:5px}
+.slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px}
+.slider-name{font-size:11px;color:#cbd5e1}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--primary)}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(--subtle);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid var(--bg)}
+input[type=range]:disabled{opacity:0.4}
+.preset-row{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px}
+.preset-btn{font-size:9.5px;padding:2px 7px;border-radius:8px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.preset-btn:hover{border-color:var(--primary);color:var(--primary)}
+.preset-btn.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.preset-btn:disabled{opacity:0.4;cursor:default}
+.scene-container{position:relative;overflow:hidden;background:var(--bg)}
+.scene-container canvas{display:block;width:100%!important;height:100%!important}
+.trace-panel{border-top:1px solid var(--card-border);background:rgba(8,12,24,0.95);position:relative}
+.trace-panel canvas{display:block;width:100%;height:100%}
+.trace-label{position:absolute;top:6px;left:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);z-index:1;pointer-events:none}
+.ctrl-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.ctrl-btn{font-size:10px;padding:4px 14px;border-radius:5px;border:1px solid var(--subtle);background:rgba(13,20,36,0.85);color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;backdrop-filter:blur(4px);transition:all 0.15s}
+.ctrl-btn:hover{border-color:var(--primary);color:var(--primary)}
+.ctrl-btn.active{background:var(--primary);color:var(--bg);border-color:var(--primary)}
+.ctrl-btn.run{background:#059669;color:white;border-color:#059669}
+.ctrl-btn.run:hover{background:#047857}
+.ctrl-btn.danger{border-color:var(--danger);color:var(--danger)}
+.sim-info{font-size:10px;color:var(--muted);line-height:1.5;margin-top:2px}
+.sim-info b{color:#94a3b8;font-weight:500}
+.results-box{background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.15);border-radius:6px;padding:8px;margin-top:4px}
+.results-box .rtitle{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:4px}
+.results-box .row{display:flex;justify-content:space-between;font-size:10px;line-height:1.6}
+.results-box .row .lbl{color:var(--muted)}
+.results-box .row .val{font-family:'JetBrains Mono',monospace;color:var(--text)}
+.results-box .row .val.good{color:var(--signal)}
+.results-box .row .val.warn{color:var(--bead)}
+.status-badge{display:inline-block;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:0.5px}
+.status-badge.idle{background:var(--subtle);color:var(--muted)}
+.status-badge.running{background:rgba(5,150,105,0.2);color:#34d399;animation:pulse 1.5s infinite}
+.status-badge.done{background:rgba(6,182,212,0.15);color:var(--primary)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.pulse-table{width:100%;margin-top:6px;font-size:9px;border-collapse:collapse}
+.pulse-table th{color:var(--muted);text-align:left;font-weight:500;padding:2px 4px;border-bottom:1px solid var(--subtle)}
+.pulse-table td{padding:2px 4px;font-family:'JetBrains Mono',monospace;color:#94a3b8;border-bottom:1px solid rgba(30,41,59,0.4)}
+.pulse-table td.det{color:var(--signal)}
+.pulse-table td.miss{color:var(--danger)}
+.mode-tabs{display:flex;gap:2px;margin-bottom:6px}
+.mode-tab{flex:1;text-align:center;font-size:9.5px;padding:4px;border-radius:4px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif}
+.mode-tab:disabled{opacity:0.4;cursor:default}
+.mode-tab.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.note{font-size:8.5px;color:#475569;line-height:1.4;margin-top:3px;font-style:italic}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+import*as THREE from'three';
+import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+
+const{useState,useEffect,useRef,useMemo,useCallback}=React;
+const h=React.createElement;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PHYSICS ENGINE
+// Based on: Govindaraju & Hassan, Sensors & Actuators: A. Physical 393 (2025)
+// Table 1: Material properties for N-type semiconductor Hall sensor
+// ══════════════════════════════════════════════════════════════════════════════
+const MU0 = 4*Math.PI*1e-7;   // Vacuum permeability [H/m]
+const RH  = 1.25e-3;          // Hall coefficient [m³/C]
+const SIGMA = 1040;            // Electrical conductivity [S/m]
+
+// Induced magnetic dipole moment of a magnetite sphere in uniform field B0
+// χ_eff = 3(µr−1)/(µr+2), Clausius-Mossotti for sphere
+// m = V_bead × χ_eff × B0 / µ0
+function beadMoment(r, mu_r, B0) {
+  const chi = 3*(mu_r - 1)/(mu_r + 2);
+  return (4/3)*Math.PI*r*r*r * chi * B0 / MU0;
+}
+
+// Magnetic dipole z-component at displacement (dx, dy, dz) from dipole at origin
+// Bz = (µ0/4π) × m × (2dz² − dx² − dy²) / (dx²+dy²+dz²)^(5/2)
+// Reference: Griffiths, Electrodynamics 4th ed., Section 5.4
+function dipBz(m, dx, dy, dz) {
+  const r2 = dx*dx + dy*dy + dz*dz;
+  if (r2 < 1e-30) return 0;
+  return (MU0/(4*Math.PI)) * m * (2*dz*dz - dx*dx - dy*dy) / Math.pow(r2, 2.5);
+}
+
+// Volume-averaged Bz over the Hall sensor body
+// Sensor: square sW×sW in-plane, thickness t, top surface at z=0
+// Bead at (bx, by) in-plane, height r above sensor top surface (bead center to sensor top)
+// Averages over sensor volume: x ∈ [-sW/2, sW/2], y ∈ [-sW/2, sW/2], z ∈ [r, r+t]
+// This is more accurate than surface-only averaging and reduces overestimate vs FEM
+function volumeAvgBz(m, bx, by, r, sW, t, nxy, nz) {
+  nxy = nxy || 10;
+  nz  = nz  || 3;
+  const hw = sW/2;
+  const stxy = sW/nxy;
+  const stz = t/nz;
+  let total = 0;
+  for (let iz = 0; iz < nz; iz++) {
+    const dz = r + (iz + 0.5)*stz;  // distance from bead center to this z-layer
+    for (let ix = 0; ix < nxy; ix++) {
+      const sx = -hw + (ix + 0.5)*stxy;
+      for (let iy = 0; iy < nxy; iy++) {
+        const sy = -hw + (iy + 0.5)*stxy;
+        total += dipBz(m, bx - sx, by - sy, dz);
+      }
+    }
+  }
+  return total / (nxy * nxy * nz);
+}
+
+// Poiseuille flow: parabolic velocity profile in channel of height H
+// v(y) = 1.5 × vAvg × [1 − ((2y/H)−1)²],  y ∈ [0, H]
+function flowVelocity(y, H, vAvg) {
+  const eta = 2*y/H - 1;
+  return 1.5*vAvg*(1 - eta*eta);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SENSOR/BEAD PRESETS — Paper Table 2
+// ══════════════════════════════════════════════════════════════════════════════
+const BEADS = [
+  {name:'Magnetite 2µm',  d:2e-6,  mu_r:10, label:'2 µm',  paperR:1, paperDVH:21.375},
+  {name:'Magnetite 6µm',  d:6e-6,  mu_r:10, label:'6 µm',  paperR:3, paperDVH:42.79},
+  {name:'Magnetite 10µm', d:10e-6, mu_r:10, label:'10 µm', paperR:5, paperDVH:3.056},
+];
+const SENSORS = [
+  {name:'I',   size:5e-6,  t:0.5e-6, label:'5×5',  matchBead:0},
+  {name:'II',  size:10e-6, t:1e-6,   label:'10×10', matchBead:1},
+  {name:'III', size:50e-6, t:1e-6,   label:'50×50', matchBead:2},
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UI COMPONENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function Slider({label, value, min, max, step, unit, onChange, disabled}) {
+  const s = step || 1;
+  const fmt = s < 0.01 ? value.toFixed(3) : s < 0.1 ? value.toFixed(2) : s < 1 ? value.toFixed(1) : Math.round(value);
+  return h('div',{className:'slider-row'},
+    h('div',{className:'slider-header'},
+      h('span',{className:'slider-name'},label),
+      h('span',{className:'slider-val'},fmt+(unit||''))
+    ),
+    h('input',{type:'range',min,max,step:s,value,disabled:!!disabled,
+      onChange:e=>onChange(+e.target.value)})
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 3D SCENE MANAGER
+// ══════════════════════════════════════════════════════════════════════════════
+class FluidScene {
+  constructor(container) {
+    this.container = container;
+    const W = container.clientWidth, H = container.clientHeight;
+
+    this.renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(W, H);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
+    container.appendChild(this.renderer.domElement);
+
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x060a14);
+    this.scene.fog = new THREE.FogExp2(0x060a14, 0.005);
+
+    this.camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 500);
+    this.camera.position.set(22, 16, 22);
+    this.camera.lookAt(0, 1, 0);
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.target.set(0, 1, 0);
+    this.controls.minDistance = 8;
+    this.controls.maxDistance = 60;
+
+    this.scene.add(new THREE.AmbientLight(0x334466, 0.6));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+    dl.position.set(10, 20, 10); this.scene.add(dl);
+    const dl2 = new THREE.DirectionalLight(0x4488cc, 0.3);
+    dl2.position.set(-10, 10, -10); this.scene.add(dl2);
+
+    const grid = new THREE.GridHelper(60, 30, 0x112244, 0x0a1530);
+    grid.position.y = -4; this.scene.add(grid);
+
+    this.channelGroup = new THREE.Group(); this.scene.add(this.channelGroup);
+    this.chmaGroup = new THREE.Group(); this.scene.add(this.chmaGroup);
+    this.buildCHMA();
+
+    this.sensorMesh = null;
+    this.sensorGlow = null;
+
+    this.beadMeshes = [];
+    this.beadGeom = new THREE.SphereGeometry(1, 20, 14);
+    this.beadMat = new THREE.MeshStandardMaterial({
+      color:0xf59e0b, emissive:0xf59e0b, emissiveIntensity:0.3,
+      metalness:0.4, roughness:0.3
+    });
+
+    this.sensorLight = new THREE.PointLight(0xa78bfa, 0, 8);
+    this.sensorLight.position.set(0, -0.5, 0); this.scene.add(this.sensorLight);
+
+    this._onResize = () => {
+      const w = container.clientWidth, hh = container.clientHeight;
+      this.camera.aspect = w/hh;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, hh);
+    };
+    window.addEventListener('resize', this._onResize);
+  }
+
+  buildChannel(sceneLen, sceneH, sceneW) {
+    this.channelGroup.clear();
+    this.chLen = sceneLen;
+
+    // Transparent PDMS block (wider)
+    const pdmsW = Math.max(sceneW * 3, 8);
+    const pdmsGeo = new THREE.BoxGeometry(sceneLen * 1.1, sceneH + 0.6, pdmsW);
+    const pdmsMat = new THREE.MeshPhysicalMaterial({
+      color:0x88ccee, transparent:true, opacity:0.03,
+      roughness:0.1, metalness:0, side:THREE.DoubleSide, depthWrite:false
+    });
+    const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
+    pdms.position.y = sceneH/2 + 0.3;
+    this.channelGroup.add(pdms);
+
+    // Flow channel wireframe
+    const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
+    const edges = new THREE.EdgesGeometry(chGeo);
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color:0x2a6a9a, transparent:true, opacity:0.5}));
+    line.position.y = sceneH/2;
+    this.channelGroup.add(line);
+
+    // Subtle fill for channel
+    const chMat = new THREE.MeshPhysicalMaterial({
+      color:0x44aadd, transparent:true, opacity:0.04, side:THREE.DoubleSide, depthWrite:false
+    });
+    this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
+
+    // Floor
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(sceneLen, pdmsW),
+      new THREE.MeshStandardMaterial({color:0x1a2a4a, transparent:true, opacity:0.2, side:THREE.DoubleSide})
+    );
+    floor.rotation.x = -Math.PI/2; floor.position.y = 0.01;
+    this.channelGroup.add(floor);
+
+    // Flow arrow + label
+    const arrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1,0,0),
+      new THREE.Vector3(-sceneLen/2 - 2, sceneH/2, 0),
+      3, 0x06b6d4, 0.6, 0.3
+    );
+    this.channelGroup.add(arrow);
+
+    const lc = document.createElement('canvas');
+    lc.width = 128; lc.height = 32;
+    const ctx = lc.getContext('2d');
+    ctx.fillStyle = '#06b6d4'; ctx.font = 'bold 16px DM Sans';
+    ctx.fillText('FLOW \u2192', 8, 22);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(lc), transparent:true, opacity:0.5
+    }));
+    sp.scale.set(3.5, 0.9, 1);
+    sp.position.set(-sceneLen/2 - 2, sceneH + 0.8, 0);
+    this.channelGroup.add(sp);
+  }
+
+  buildSensor(w, t, d) {
+    if (this.sensorMesh) { this.scene.remove(this.sensorMesh); this.scene.remove(this.sensorGlow); }
+    const geo = new THREE.BoxGeometry(w, Math.max(t, 0.1), d);
+    const mat = new THREE.MeshStandardMaterial({
+      color:0x8b5cf6, emissive:0x6d28d9, emissiveIntensity:0.4,
+      metalness:0.6, roughness:0.2
+    });
+    this.sensorMesh = new THREE.Mesh(geo, mat);
+    this.sensorMesh.position.y = -Math.max(t, 0.1)/2;
+    this.scene.add(this.sensorMesh);
+
+    const glowGeo = new THREE.PlaneGeometry(w * 1.6, d * 1.6);
+    this.sensorGlow = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({
+      color:0x8b5cf6, transparent:true, opacity:0.05, side:THREE.DoubleSide
+    }));
+    this.sensorGlow.rotation.x = -Math.PI/2;
+    this.sensorGlow.position.y = 0.03;
+    this.scene.add(this.sensorGlow);
+  }
+
+  // CHMA: Circular Halbach Magnetic Array
+  // Bore axis along X (flow direction) so B field is vertical (Y-axis)
+  // through the channel — perpendicular to flow, parallel field lines
+  // Reference: Paper Fig. 1(a,b) — magnets in XY plane, field ⊥ to XZ flow plane
+  buildCHMA() {
+    this.chmaGroup.clear();
+    const nMag = 8, radius = 7;
+    const magW = 2.5, magH = 2, magD = 2.5;
+
+    for (let i = 0; i < nMag; i++) {
+      const angle = (i / nMag) * Math.PI * 2;
+      // Ring in YZ plane (bore axis = X = flow direction)
+      const py = Math.cos(angle) * radius;
+      const pz = Math.sin(angle) * radius;
+
+      const isN = i % 2 === 0;
+      const mat = new THREE.MeshStandardMaterial({
+        color: isN ? 0xdc2626 : 0x2563eb,
+        emissive: isN ? 0x7f1d1d : 0x1e3a5f,
+        emissiveIntensity: 0.3, metalness: 0.7, roughness: 0.3
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(magD, magH, magW), mat);
+      mesh.position.set(0, py, pz);
+      // Orient each magnet to point toward center (Halbach arrangement)
+      mesh.lookAt(0, 0, 0);
+      this.chmaGroup.add(mesh);
+
+      // N/S label
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = isN ? '#fca5a5' : '#93c5fd';
+      ctx.font = 'bold 20px DM Sans'; ctx.textAlign = 'center';
+      ctx.fillText(isN ? 'N' : 'S', 16, 22);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(c), transparent: true
+      }));
+      sp.scale.set(1.2, 1.2, 1);
+      const labelR = radius + 1.8;
+      sp.position.set(0, Math.cos(angle)*labelR, Math.sin(angle)*labelR);
+      this.chmaGroup.add(sp);
+    }
+
+    // Connecting ring (torus in YZ plane, bore along X)
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(radius, 0.12, 8, 32),
+      new THREE.MeshStandardMaterial({color:0x334155, metalness:0.8, roughness:0.2})
+    );
+    // Torus default is in XY plane; rotate so it's in YZ plane (bore along X)
+    ring.rotation.y = Math.PI / 2;
+    this.chmaGroup.add(ring);
+
+    // B-field direction arrows (vertical, showing uniform field through channel)
+    for (let xi = -4; xi <= 4; xi += 4) {
+      const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, -1, 0),  // field points downward (into sensor)
+        new THREE.Vector3(xi, 3.5, 0),
+        2.5, 0x06b6d4, 0.4, 0.2
+      );
+      arrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.3; }});
+      this.chmaGroup.add(arrow);
+    }
+
+    // "B₀" label near center field arrow
+    const bc = document.createElement('canvas');
+    bc.width = 64; bc.height = 32;
+    const bctx = bc.getContext('2d');
+    bctx.fillStyle = '#06b6d4'; bctx.font = 'bold 14px JetBrains Mono';
+    bctx.fillText('B\u2080 \u2193', 8, 22);
+    const bsp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(bc), transparent:true, opacity:0.5
+    }));
+    bsp.scale.set(2.5, 1, 1);
+    bsp.position.set(0, 4.5, 0);
+    this.chmaGroup.add(bsp);
+
+    // Label
+    const lc = document.createElement('canvas');
+    lc.width = 320; lc.height = 32;
+    const lctx = lc.getContext('2d');
+    lctx.fillStyle = '#64748b'; lctx.font = '13px DM Sans';
+    lctx.fillText('Circular Halbach Magnetic Array (bore \u2016 flow)', 10, 22);
+    const lsp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(lc), transparent:true, opacity:0.4
+    }));
+    lsp.scale.set(12, 1.2, 1);
+    lsp.position.set(0, -radius - 2.5, 0);
+    this.chmaGroup.add(lsp);
+  }
+
+  getOrCreateBead(idx) {
+    while (this.beadMeshes.length <= idx) {
+      const m = new THREE.Mesh(this.beadGeom, this.beadMat.clone());
+      m.visible = false; this.scene.add(m); this.beadMeshes.push(m);
+    }
+    return this.beadMeshes[idx];
+  }
+
+  updateBeads(positions, rScene) {
+    for (let i = 0; i < this.beadMeshes.length; i++) this.beadMeshes[i].visible = false;
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      if (!p) continue;
+      const mesh = this.getOrCreateBead(i);
+      mesh.visible = true;
+      mesh.position.set(p.sx, p.sy, p.sz);
+      mesh.scale.setScalar(rScene);
+      mesh.material.emissive.setHex(p.detected ? 0x22c55e : 0xf59e0b);
+      mesh.material.emissiveIntensity = p.detected ? 0.6 : (0.2 + p.glow * 0.5);
+    }
+  }
+
+  setSensorGlow(intensity) {
+    this.sensorLight.intensity = intensity * 3;
+    if (this.sensorMesh) this.sensorMesh.material.emissiveIntensity = 0.3 + intensity * 0.7;
+  }
+
+  render() { this.controls.update(); this.renderer.render(this.scene, this.camera); }
+
+  dispose() {
+    window.removeEventListener('resize', this._onResize);
+    this.renderer.dispose();
+    if (this.renderer.domElement.parentNode) this.container.removeChild(this.renderer.domElement);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN APPLICATION
+// ══════════════════════════════════════════════════════════════════════════════
+function App() {
+  // --- State ---
+  const [sensIdx, setSensIdx]     = useState(1);    // Design II default
+  const [beadIdx, setBeadIdx]     = useState(1);    // 6µm default
+  const [vBias, setVBias]         = useState(5);    // V
+  const [B0, setB0]               = useState(100);  // mT
+  const [chH, setChH]             = useState(50);   // channel height µm
+  const [flowVel, setFlowVel]     = useState(1.0);  // mm/s mean flow velocity
+  const [nBeads, setNBeads]       = useState(10);
+  const [heightMode, setHeightMode] = useState('fixed');
+  const [fixedHeight, setFixedHeight] = useState(3);  // µm
+  const [minHeight, setMinHeight] = useState(2);
+  const [maxHeight, setMaxHeight] = useState(10);
+  const [threshold, setThreshold] = useState(1);  // mV
+  const [simState, setSimState]   = useState('idle');
+  const [speed, setSpeed]         = useState(5);  // start at 5× so near-wall beads arrive faster
+  const [, forceUpdate]           = useState(0);
+
+  // --- Derived physics ---
+  const sensor = SENSORS[sensIdx];
+  const bead   = BEADS[beadIdx];
+  const chH_m  = chH * 1e-6;
+  const chW_m  = sensor.size;       // Channel width = sensor width
+  const B0_T   = B0 * 1e-3;
+  const r_bead = bead.d / 2;
+  const vAvg   = flowVel * 1e-3;    // m/s
+  const mom    = beadMoment(r_bead, bead.mu_r, B0_T);
+
+  // Compute expected ΔVH at paper reference height for validation
+  const refBz = volumeAvgBz(mom, 0, 0, bead.paperR * 1e-6, sensor.size, sensor.t, 12, 3);
+  const refDVH = Math.abs(RH * SIGMA * refBz * vBias) * 1000;
+
+  // Visual length: beads take ~5s to cross at 1× speed
+  const visLen = Math.max(vAvg * 5, sensor.size * 25, 500e-6);
+  // Bead spacing in physics coords: enough separation for distinct pulses
+  const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
+
+  // 3D scene scaling
+  const SCENE_LEN = 30;
+  const SCENE_H   = 4;
+  const SCENE_W   = 3;
+  const scaleX = SCENE_LEN / visLen;
+  const scaleY = SCENE_H / chH_m;
+  const scaleZ = SCENE_W / chW_m;
+  const rScene = Math.max(0.12, r_bead * scaleY * 1.3);
+
+  // --- Refs ---
+  const sceneRef     = useRef(null);
+  const sceneContRef = useRef(null);
+  const traceRef     = useRef(null);
+  const traceContRef = useRef(null);
+  const simRef       = useRef({
+    beads:[], signalBuf:[], time:0, peakSignal:0,
+    batchDone:false, pulseData:[], _dbg:false
+  });
+
+  // --- Init 3D ---
+  useEffect(() => {
+    if (!sceneContRef.current) return;
+    const sc = new FluidScene(sceneContRef.current);
+    sceneRef.current = sc;
+    return () => sc.dispose();
+  }, []);
+
+  // --- Update channel/sensor geometry ---
+  useEffect(() => {
+    const sc = sceneRef.current; if (!sc) return;
+    sc.buildChannel(SCENE_LEN, SCENE_H, SCENE_W);
+    sc.buildSensor(SCENE_W, 0.15, SCENE_W);
+  }, [sensIdx, chH]);
+
+  // --- Start batch ---
+  function startBatch() {
+    const sim = simRef.current;
+    sim.beads = []; sim.signalBuf = []; sim.time = 0;
+    sim.peakSignal = 0; sim.batchDone = false; sim.pulseData = []; sim._dbg = false;
+
+    for (let i = 0; i < nBeads; i++) {
+      // Beads start off-screen to the left, spaced apart
+      const startX = -visLen/2 - r_bead*2 - i * beadSpacing;
+      let y;
+      if (heightMode === 'fixed') {
+        y = fixedHeight * 1e-6;
+      } else {
+        y = (minHeight + Math.random() * (maxHeight - minHeight)) * 1e-6;
+      }
+      // Minimum physical distance: bead center can't be closer than bead radius to surface
+      const minPhysR = r_bead + 0.1e-6;
+      y = Math.max(y, minPhysR);
+      // Small lateral jitter (channel = sensor width, so keep beads mostly centered)
+      const z = (Math.random() - 0.5) * chW_m * 0.4;
+
+      sim.beads.push({
+        id: i + 1, x: startX, y, z,
+        active: true, passed: false, detected: false,
+        peakDVH: 0, currentDVH: 0, height_um: y * 1e6,
+      });
+    }
+    setSimState('running');
+  }
+
+  function resetSim() {
+    const sim = simRef.current;
+    sim.beads = []; sim.signalBuf = []; sim.time = 0;
+    sim.peakSignal = 0; sim.batchDone = false; sim.pulseData = []; sim._dbg = false;
+    setSimState('idle');
+    forceUpdate(n => n + 1);
+  }
+
+  // --- Animation loop ---
+  useEffect(() => {
+    let raf, lastT = performance.now();
+    const sim = simRef.current;
+
+    function tick(now) {
+      const rawDt = (now - lastT) / 1000;
+      lastT = now;
+      const dt = Math.min(rawDt, 0.05) * (simState === 'running' ? speed : 0);
+
+      if (simState === 'running') {
+        let anyActive = false;
+
+        // Detection zone: ±10 sensor widths from center
+        const detZone = sensor.size * 10;
+        const noiseRMS = 0.15e-3 * vBias;
+
+        // Sub-stepping: at high speed, beads skip over the sensor peak zone.
+        // We need dx < sensor.size/2 per step to capture the narrow peak.
+        // Compute global sub-step count based on fastest bead.
+        const maxV = heightMode === 'fixed' ? vAvg : 1.5 * vAvg;
+        const frameDx = maxV * dt;
+        const maxStep = sensor.size * 0.4;
+        const nSub = Math.max(1, Math.ceil(frameDx / maxStep));
+        const subDt = dt / nSub;
+
+        for (let step = 0; step < nSub; step++) {
+          // Move all beads one sub-step
+          for (const b of sim.beads) {
+            if (!b.active) continue;
+            const v = heightMode === 'fixed' ? vAvg : flowVelocity(b.y, chH_m, vAvg);
+            b.x += v * subDt;
+            if (heightMode !== 'fixed') {
+              b.y = Math.max(r_bead + 0.2e-6, b.y - 0.3e-6 * subDt);
+            }
+          }
+
+          // Compute signal from all beads at this sub-step
+          let subTotal = 0;
+          for (const b of sim.beads) {
+            if (!b.active) continue;
+            if (Math.abs(b.x) < detZone) {
+              const Bz = volumeAvgBz(mom, b.x, b.z, b.y, sensor.size, sensor.t, 6, 1);
+              const dvh = Math.abs(RH * SIGMA * Bz * vBias);
+              b.currentDVH = dvh;
+              if (dvh > b.peakDVH) b.peakDVH = dvh;
+              if (!b.detected && dvh * 1000 > threshold) b.detected = true;
+              subTotal += dvh;
+            } else {
+              b.currentDVH = 0;
+            }
+          }
+
+          // Push signal sample for each sub-step (gives smooth trace)
+          const noise = (Math.random() - 0.5) * 2 * noiseRMS;
+          const tSub = sim.time + (step + 1) * subDt;
+          sim.signalBuf.push({t: tSub, v: subTotal * 1000, vn: (subTotal + noise) * 1000});
+          if (subTotal * 1000 > sim.peakSignal) sim.peakSignal = subTotal * 1000;
+        }
+
+        // Trim signal buffer
+        while (sim.signalBuf.length > 3000) sim.signalBuf.shift();
+        sim.time += dt;
+
+        // Check active/passed
+        for (const b of sim.beads) {
+          if (!b.active) continue;
+          if (b.x > visLen/2 + r_bead * 4) {
+            b.active = false; b.passed = true;
+          } else {
+            anyActive = true;
+          }
+        }
+
+        // Batch complete?
+        if (!anyActive && sim.beads.length > 0) {
+          sim.batchDone = true;
+          sim.pulseData = sim.beads.map(b => ({
+            id: b.id, peakDVH: b.peakDVH * 1000, detected: b.detected, height_um: b.height_um,
+          }));
+          setSimState('done');
+        }
+
+        forceUpdate(n => n + 1);
+      }
+
+      // Update 3D scene
+      const sc = sceneRef.current;
+      if (sc) {
+        const positions = sim.beads.map(b => {
+          if (!b.active) return null;
+          return {
+            sx: b.x * scaleX,
+            sy: b.y * scaleY,
+            sz: b.z * scaleZ,
+            detected: b.detected,
+            glow: Math.min(b.currentDVH * 1000 / 20, 1),
+          };
+        });
+        sc.updateBeads(positions, rScene);
+        const maxSig = sim.beads.reduce((mx, b) => Math.max(mx, b.currentDVH || 0), 0);
+        sc.setSensorGlow(Math.min(maxSig * 1000 / 10, 1));
+        sc.render();
+      }
+
+      drawTrace();
+      raf = requestAnimationFrame(tick);
+    }
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [simState, speed, chH_m, chW_m, vAvg, mom, r_bead, sensor.size, sensor.t,
+      vBias, threshold, visLen, scaleX, scaleY, scaleZ, rScene, nBeads, beadSpacing, heightMode]);
+
+  // --- Signal trace drawing ---
+  function drawTrace() {
+    const canvas = traceRef.current;
+    const cont = traceContRef.current;
+    if (!canvas || !cont) return;
+    const W = cont.clientWidth, H = cont.clientHeight;
+    if (canvas.width !== W*2 || canvas.height !== H*2) { canvas.width = W*2; canvas.height = H*2; }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(2, 0, 0, 2, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const sim = simRef.current;
+    const pad = {top:22, bottom:22, left:52, right:15};
+    const dW = W - pad.left - pad.right;
+    const dH = H - pad.top - pad.bottom;
+    const maxV = Math.max(threshold * 3, sim.peakSignal * 1.3, 5);
+    const buf = sim.signalBuf;
+
+    // Grid
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.5;
+    const nG = 5;
+    for (let i = 0; i <= nG; i++) {
+      const py = pad.top + dH * (1 - i/nG);
+      ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(pad.left + dW, py); ctx.stroke();
+      ctx.fillStyle = '#475569'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'right';
+      const val = (i/nG) * maxV;
+      ctx.fillText(val < 10 ? val.toFixed(1) : val.toFixed(0), pad.left - 4, py + 3);
+    }
+
+    // Threshold
+    const thY = pad.top + dH * (1 - threshold / maxV);
+    if (thY > pad.top && thY < pad.top + dH) {
+      ctx.strokeStyle = 'rgba(239,68,68,0.3)'; ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(pad.left, thY); ctx.lineTo(pad.left + dW, thY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444'; ctx.font = '8px DM Sans'; ctx.textAlign = 'left';
+      ctx.fillText('detection threshold', pad.left + 3, thY - 3);
+    }
+
+    if (buf.length > 1) {
+      // Noisy trace (faint)
+      ctx.strokeStyle = 'rgba(34,197,94,0.15)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(Math.abs(buf[i].vn) / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Clean signal
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(buf[i].v / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Glow
+      ctx.strokeStyle = 'rgba(34,197,94,0.07)'; ctx.lineWidth = 7;
+      ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(buf[i].v / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // Y label
+    ctx.save(); ctx.translate(10, pad.top + dH/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = '#64748b'; ctx.font = '9px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('\u0394V_H (mV)', 0, 0); ctx.restore();
+
+    // X label
+    ctx.fillStyle = '#475569'; ctx.font = '9px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('Time (s)', pad.left + dW/2, pad.top + dH + 16);
+
+    // Time axis labels
+    if (buf.length > 1) {
+      const tMax = buf[buf.length-1].t;
+      const tMin = buf[0].t;
+      ctx.fillStyle = '#384860'; ctx.font = '8px JetBrains Mono'; ctx.textAlign = 'center';
+      for (let i = 0; i <= 4; i++) {
+        const t = tMin + (tMax - tMin) * i / 4;
+        const px = pad.left + dW * (i / 4);
+        ctx.fillText(t.toFixed(1), px, pad.top + dH + 8);
+      }
+    }
+
+    // Progress
+    if (simState === 'running') {
+      const nPassed = sim.beads.filter(b => b.passed).length;
+      ctx.fillStyle = '#06b6d4'; ctx.font = '10px DM Sans'; ctx.textAlign = 'right';
+      ctx.fillText(nPassed + '/' + sim.beads.length + ' passed', pad.left + dW - 2, pad.top - 6);
+    }
+    if (simState === 'done') {
+      ctx.fillStyle = '#06b6d4'; ctx.font = '10px DM Sans'; ctx.textAlign = 'right';
+      ctx.fillText('Batch complete \u2014 ' + sim.beads.length + ' beads', pad.left + dW - 2, pad.top - 6);
+    }
+  }
+
+  // --- Computed metrics ---
+  const sim = simRef.current;
+  const nDetected = sim.beads.filter(b => b.detected).length;
+  const pulses = sim.pulseData;
+  const detPulses = pulses.filter(p => p.detected);
+  const meanPeak = detPulses.length > 0 ? detPulses.reduce((s,p) => s + p.peakDVH, 0) / detPulses.length : 0;
+  const stdPeak = detPulses.length > 1 ? Math.sqrt(detPulses.reduce((s,p) => s + (p.peakDVH - meanPeak)**2, 0) / (detPulses.length - 1)) : 0;
+  const cvPeak = meanPeak > 0 ? (stdPeak / meanPeak * 100) : 0;
+
+  // Q from velocity (for display)
+  const Q_uLmin = vAvg * chW_m * chH_m * 60 * 1e6;
+
+  return h('div', {className:'app'},
+    // ── Header ──
+    h('div', {className:'header'},
+      h('h1', null,
+        h('span', {className:'brand'}, '\u00B5Flow'),
+        ' 3D Microfluidic Hall Sensor',
+        h('span', {className:'sub'}, 'Govindaraju & Hassan, Sensors Actuators A (2025)')
+      ),
+      h('div', {className:'metrics'},
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Status'),
+          h('span', {className:'status-badge ' + simState},
+            simState === 'idle' ? 'IDLE' : simState === 'running' ? 'RUNNING' : 'COMPLETE')
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Detected'),
+          h('div', {className:'metric-value g'}, nDetected + '/' + nBeads)
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Peak \u0394V_H'),
+          h('div', {className:'metric-value g'}, sim.peakSignal.toFixed(2) + ' mV')
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Moment m'),
+          h('div', {className:'metric-value'}, (mom*1e12).toFixed(2) + ' pA\u00B7m\u00B2')
+        ),
+      )
+    ),
+
+    // ── Sidebar ──
+    h('div', {className:'sidebar'},
+      // Sensor
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Sensor Design (Paper Table 2)'),
+        h('div', {className:'preset-row'}, SENSORS.map((s, i) =>
+          h('button', {key:i, className:'preset-btn' + (sensIdx===i?' active':''),
+            disabled: simState==='running',
+            onClick:() => { setSensIdx(i); setBeadIdx(s.matchBead);
+              setFixedHeight(BEADS[s.matchBead].paperR); }},
+            s.name + ' (' + s.label + ')')
+        )),
+        h(Slider, {label:'Bias Voltage', value:vBias, min:1, max:5, step:0.5, unit:' V',
+          onChange:setVBias, disabled:simState==='running'}),
+        h('div', {className:'sim-info'},
+          h('div', null, h('b', null, 'Active area: '), sensor.label, ' \u00B5m\u00B2, t = ', (sensor.t*1e6).toFixed(1), ' \u00B5m'),
+        ),
+      ),
+
+      // Channel
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Microfluidic Channel'),
+        h(Slider, {label:'Height', value:chH, min:10, max:200, step:5, unit:' \u00B5m',
+          onChange:setChH, disabled:simState==='running'}),
+        h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s',
+          onChange:setFlowVel, disabled:simState==='running'}),
+        h('div', {className:'sim-info'},
+          h('div', null, h('b', null, 'Width: '), (chW_m*1e6).toFixed(0), ' \u00B5m (= sensor)'),
+          h('div', null, h('b', null, 'Q: '), Q_uLmin < 0.001 ? Q_uLmin.toExponential(2) : Q_uLmin.toFixed(4), ' \u00B5L/min'),
+        ),
+      ),
+
+      // Bead
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Magnetite Particle (\u00B5r = 10)'),
+        h('div', {className:'preset-row'}, BEADS.map((p, i) =>
+          h('button', {key:i, className:'preset-btn' + (beadIdx===i?' active':''),
+            disabled: simState==='running', onClick:() => setBeadIdx(i)}, p.label)
+        )),
+        h(Slider, {label:'Batch size N', value:nBeads, min:1, max:50, step:1, unit:'',
+          onChange:setNBeads, disabled:simState==='running'}),
+      ),
+
+      // Bead height
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Bead\u2013Sensor Distance r'),
+        h('div', {className:'mode-tabs'},
+          h('button', {className:'mode-tab' + (heightMode==='fixed'?' active':''),
+            disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed r'),
+          h('button', {className:'mode-tab' + (heightMode==='range'?' active':''),
+            disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random range'),
+        ),
+        heightMode === 'fixed'
+          ? h(Slider, {label:'r (center\u2013surface)', value:fixedHeight, min:0.5, max:30, step:0.5, unit:' \u00B5m',
+              onChange:setFixedHeight, disabled:simState==='running'})
+          : h('div', null,
+              h(Slider, {label:'Min r', value:minHeight, min:0.5, max:20, step:0.5, unit:' \u00B5m',
+                onChange:setMinHeight, disabled:simState==='running'}),
+              h(Slider, {label:'Max r', value:maxHeight, min:1, max:40, step:0.5, unit:' \u00B5m',
+                onChange:setMaxHeight, disabled:simState==='running'}),
+            ),
+        // Warning if height < bead radius
+        (heightMode === 'fixed' && fixedHeight < r_bead*1e6 + 0.1) &&
+          h('div', {style:{fontSize:'9px',color:'#ef4444',marginTop:'2px'}},
+            '\u26A0 Min r for ', bead.label, ' bead: ', ((r_bead+0.1e-6)*1e6).toFixed(1), ' \u00B5m (bead radius + gap)'),
+        h('div', {className:'note'},
+          'Paper (COMSOL FEM): Design ', sensor.name, ' at r = ', bead.paperR,
+          ' \u00B5m \u2192 \u0394V_H = ', bead.paperDVH, ' mV',
+          h('br'), 'Dipole model predicts: ', refDVH.toFixed(2), ' mV (~2\u00D7 overestimate vs FEM)'
+        ),
+      ),
+
+      // CHMA
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Halbach Array (N52 NdFeB)'),
+        h(Slider, {label:'B\u2080 at sensor', value:B0, min:10, max:500, step:10, unit:' mT',
+          onChange:setB0, disabled:simState==='running'}),
+      ),
+
+      // Detection
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Detection Threshold'),
+        h(Slider, {label:'\u0394V_H threshold', value:threshold, min:0.1, max:100, step:0.1, unit:' mV', onChange:setThreshold}),
+      ),
+
+      // Physics info
+      h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Physics'),
+        h('div', {className:'sim-info'},
+          h('div', null, h('b', null, 'R_H = '), RH.toExponential(2), ' m\u00B3/C'),
+          h('div', null, h('b', null, '\u03C3 = '), SIGMA, ' S/m'),
+          h('div', null, h('b', null, '\u03C7_eff = '), (3*(bead.mu_r-1)/(bead.mu_r+2)).toFixed(3)),
+          h('div', null, h('b', null, 'm = '), (mom*1e12).toFixed(3), ' pA\u00B7m\u00B2'),
+          h('div', null, h('b', null, 'Transit ~'), (sensor.size * 4 / vAvg).toFixed(2), ' s/bead'),
+        ),
+      ),
+
+      // Batch results
+      simState === 'done' && h('div', {className:'group'},
+        h('div', {className:'group-title'}, 'Batch Results'),
+        h('div', {className:'results-box'},
+          h('div', {className:'rtitle'}, 'Pulse Analysis \u2014 ' + nBeads + ' beads'),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'Detection'),
+            h('span', {className:'val ' + (nDetected === nBeads ? 'good' : 'warn')},
+              nDetected + '/' + nBeads + ' (' + (nDetected/nBeads*100).toFixed(0) + '%)')
+          ),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'Mean peak'),
+            h('span', {className:'val'}, meanPeak.toFixed(3) + ' mV')
+          ),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'Std dev'),
+            h('span', {className:'val'}, stdPeak.toFixed(4) + ' mV')
+          ),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'CV'),
+            h('span', {className:'val ' + (cvPeak < 5 ? 'good' : cvPeak < 15 ? 'warn' : 'r')},
+              cvPeak.toFixed(1) + '%')
+          ),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'Max peak'),
+            h('span', {className:'val good'}, sim.peakSignal.toFixed(3) + ' mV')
+          ),
+          h('div', {className:'row'},
+            h('span', {className:'lbl'}, 'Model'),
+            h('span', {className:'val'}, 'Dipole (analytical)')
+          ),
+        ),
+        // Pulse table
+        pulses.length > 0 && pulses.length <= 50 && h('div', {style:{maxHeight:'200px', overflowY:'auto', marginTop:'4px'}},
+          h('table', {className:'pulse-table'},
+            h('thead', null, h('tr', null,
+              h('th', null, '#'), h('th', null, 'r (\u00B5m)'), h('th', null, 'Peak (mV)'), h('th', null, ''),
+            )),
+            h('tbody', null, pulses.map(p =>
+              h('tr', {key:p.id},
+                h('td', null, p.id),
+                h('td', null, p.height_um.toFixed(1)),
+                h('td', null, p.peakDVH.toFixed(3)),
+                h('td', {className: p.detected ? 'det' : 'miss'}, p.detected ? '\u2713' : '\u2717'),
+              )
+            ))
+          )
+        ),
+      ),
+    ),
+
+    // ── 3D Scene ──
+    h('div', {className:'scene-container', ref:sceneContRef},
+      h('div', {className:'ctrl-bar'},
+        simState === 'idle' && h('button', {className:'ctrl-btn run', onClick:startBatch},
+          '\u25B6 Run Batch (' + nBeads + ' beads)'),
+        simState === 'running' && h('button', {className:'ctrl-btn', onClick:() => setSpeed(s => s===1?2:s===2?5:s===5?10:1)},
+          'Speed ' + speed + '\u00D7'),
+        (simState === 'running' || simState === 'done') && h('button', {className:'ctrl-btn danger', onClick:resetSim}, 'Reset'),
+        simState === 'done' && h('button', {className:'ctrl-btn run', onClick:startBatch}, '\u21BB Re-run'),
+      ),
+    ),
+
+    // ── Signal Trace ──
+    h('div', {className:'trace-panel', ref:traceContRef},
+      h('div', {className:'trace-label'}, 'Real-time Hall Voltage \u2014 \u0394V_H(t)'),
+      h('canvas', {ref:traceRef}),
+    ),
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
