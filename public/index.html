@@ -304,29 +304,66 @@ function flowVelocity(y, H, vAvg) {
   return 1.5*vAvg*(1 - eta*eta);
 }
 
-// Compute material-derived Hall properties
-function computeMatProps(mat) {
+// Compute material-derived Hall properties with optional gate voltage
+function computeMatProps(mat, Vg) {
   const mu_SI = mat.mu * 1e-4; // cm²/Vs → m²/Vs
-  const RH = (mat.dim === '2D') ? 1/(mat.n * EC) : 1/(mat.n * EC);
-  const sigma = mat.n * EC * mu_SI;
+  let n = mat.n;
+
+  // Gate-tunable 2D materials: n(Vg) = sqrt(n_res² + (Cox·|Vg - V_CNP|/e)²)
+  // This model smoothly interpolates from residual density at CNP to gate-induced density
+  if (mat.gate && Vg !== undefined && Vg !== null) {
+    const eps0 = 8.854e-12;
+    const Cox = eps0 * mat.gate.eps_r / mat.gate.d_ox; // F/m²
+    const nGate = Cox * Math.abs(Vg - mat.gate.V_CNP) / EC; // gate-induced density
+    const nRes = mat.gate.n_res; // residual/puddle density at CNP
+    n = Math.sqrt(nRes * nRes + nGate * nGate); // smooth crossover
+  }
+
+  const RH = 1 / (n * EC);
+  const sigma = n * EC * mu_SI;
   const SI = Math.abs(RH);
-  return { RH, sigma, SI, mu_SI };
+  return { RH, sigma, SI, mu_SI, n };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MATERIAL & BEAD LIBRARIES
 // ══════════════════════════════════════════════════════════════════════════════
 const MATERIALS = [
+  // ── 2D Gate-Tunable Materials ──
   {id:'graphene', name:'Graphene (CVD)', mu:3000, n:5e15, dim:'2D', color:'#06b6d4',
-   desc:'Monolayer CVD graphene on SiO\u2082/Si', ref:'Xu 2013, Petit 2024'},
+   desc:'Monolayer CVD graphene on 285 nm SiO\u2082/Si', ref:'Xu 2013, Petit 2024',
+   gate:{eps_r:3.9, d_ox:285e-9, V_CNP:0, n_res:4e15, Vg_range:[-60,60]}},
   {id:'graphene-hbn', name:'Graphene/hBN', mu:15000, n:2e15, dim:'2D', color:'#22d3ee',
-   desc:'hBN-encapsulated graphene, ultra-high mobility', ref:'Dauber 2015'},
+   desc:'hBN-encapsulated graphene, ultra-high mobility', ref:'Dauber 2015',
+   gate:{eps_r:3.5, d_ox:30e-9, V_CNP:0.2, n_res:1e15, Vg_range:[-5,5]}},
+  {id:'graphene-sic', name:'Graphene/SiC', mu:5000, n:1e17, dim:'2D', color:'#2dd4bf',
+   desc:'Epitaxial graphene on 4H-SiC (0001), n-doped', ref:'Janssen 2011',
+   gate:null},
+  {id:'gaas', name:'GaAs/AlGaAs 2DEG', mu:8000, n:5e15, dim:'2D', color:'#a78bfa',
+   desc:'Modulation-doped GaAs/Al\u2080.\u2083Ga\u2080.\u2087As heterostructure', ref:'Aledealat 2009',
+   gate:{eps_r:12.9, d_ox:80e-9, V_CNP:-0.5, n_res:2e15, Vg_range:[-2,1]}},
+  {id:'algangan', name:'AlGaN/GaN 2DEG', mu:1500, n:8e16, dim:'2D', color:'#34d399',
+   desc:'AlGaN/GaN HEMT, high-density 2DEG, robust', ref:'Dowling 2019',
+   gate:{eps_r:9.5, d_ox:25e-9, V_CNP:-4.5, n_res:5e15, Vg_range:[-6,0]}},
+  // ── 3D Bulk Materials (no gate) ──
   {id:'insb', name:'InSb (MBE)', mu:70000, n:2e22, dim:'3D', color:'#f59e0b',
-   desc:'Indium antimonide thin film on GaAs', ref:'Togawa 2005'},
-  {id:'gaas', name:'GaAs 2DEG', mu:8000, n:5e15, dim:'2D', color:'#a78bfa',
-   desc:'GaAs/AlGaAs two-dimensional electron gas', ref:'Aledealat 2009'},
+   desc:'Indium antimonide thin film on GaAs substrate', ref:'Togawa 2005',
+   gate:null},
+  {id:'inas', name:'InAs (thin film)', mu:22000, n:1.5e23, dim:'3D', color:'#fb923c',
+   desc:'Indium arsenide, narrow-gap III-V, high mobility', ref:'Boero 2003',
+   gate:null},
+  {id:'insb-qw', name:'InSb Quantum Well', mu:50000, n:2e15, dim:'2D', color:'#fbbf24',
+   desc:'InSb/AlInSb QW, 2DEG with extreme mobility', ref:'Gilbertson 2011',
+   gate:{eps_r:15.2, d_ox:50e-9, V_CNP:-1.0, n_res:1e15, Vg_range:[-3,1]}},
   {id:'si', name:'Silicon CMOS', mu:1400, n:1e22, dim:'3D', color:'#94a3b8',
-   desc:'N-type Si, standard 0.35 \u00b5m CMOS', ref:'Besse 2002'},
+   desc:'N-type Si, standard 0.35 \u00b5m CMOS process', ref:'Besse 2002',
+   gate:null},
+  {id:'bismuth', name:'Bismuth (thin film)', mu:4000, n:3e23, dim:'3D', color:'#c084fc',
+   desc:'Semimetal, giant R\u2095 at low carrier density', ref:'Sandhu 2004',
+   gate:null},
+  {id:'bise', name:'Bi\u2082Se\u2083 (TI)', mu:1500, n:5e16, dim:'2D', color:'#e879f9',
+   desc:'Topological insulator surface states, spin-polarized', ref:'Taskin 2012',
+   gate:{eps_r:3.9, d_ox:300e-9, V_CNP:15, n_res:3e16, Vg_range:[-20,50]}},
 ];
 
 const BEAD_LIBRARY = [
@@ -542,11 +579,11 @@ class FluidScene {
 function DesignerPage({matIdx, setMatIdx, customMat, setCustomMat,
   beadIdx, setBeadIdx, beadMode, setBeadMode, customBead, setCustomBead,
   sensMode, setSensMode, sensIdx, setSensIdx, customSensor, setCustomSensor,
-  chH, setChH, flowVel, setFlowVel, B0, setB0, goToSim}) {
+  chH, setChH, flowVel, setFlowVel, B0, setB0, Vg, setVg, goToSim}) {
 
   const mat = matIdx < MATERIALS.length ? MATERIALS[matIdx] : customMat;
   const isCustomMat = matIdx >= MATERIALS.length;
-  const mp = computeMatProps(isCustomMat ? customMat : mat);
+  const mp = computeMatProps(isCustomMat ? customMat : mat, Vg);
   const activeBead = beadMode === 'custom' ? customBead : BEAD_LIBRARY[beadIdx];
   const activeSensor = sensMode === 'custom' ? customSensor : SENSOR_PRESETS[sensIdx];
   const chi = 3*(activeBead.mu_r - 1)/(activeBead.mu_r + 2);
@@ -599,6 +636,24 @@ function DesignerPage({matIdx, setMatIdx, customMat, setCustomMat,
             h('tr',null, h('td',null,'|S\u1d62| (sensitivity)'), h('td',{className:'computed'}, fmtSci(mp.SI)+' V/AT')),
             h('tr',null, h('td',null,'R\u2095\u00b7\u03c3 product'), h('td',{className:'computed'}, fmtSci(mp.RH*mp.sigma))),
           )
+        ),
+        // Gate voltage control for gate-tunable materials
+        mat.gate && h('div', null,
+          h('div', {className:'divider'}),
+          h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},
+            h('span', {style:{fontSize:'10px',color:'var(--muted)',fontWeight:600,textTransform:'uppercase',letterSpacing:'1px'}}, 'Gate Tuning'),
+            h('button', {className:'preset-btn', style:{fontSize:'9px'},
+              onClick:()=>setVg(Vg === null ? 0 : null)},
+              Vg === null ? 'Enable Gate' : 'Disable Gate'),
+          ),
+          Vg !== null && h('div', null,
+            h(NumField, {label:'Gate voltage V\u1d33', value:Vg, unit:'V',
+              onChange:v=>setVg(Math.max(mat.gate.Vg_range[0], Math.min(mat.gate.Vg_range[1], v)))}),
+            h('div', {style:{fontSize:'9px',color:'var(--muted)',marginTop:'2px'}},
+              'Range: '+mat.gate.Vg_range[0]+' to '+mat.gate.Vg_range[1]+' V | V\u0043\u004e\u0050 = '+mat.gate.V_CNP+' V'),
+            h('div', {style:{fontSize:'9px',color:'var(--muted)'}},
+              'n(V\u1d33) = '+fmtSci(mp.n)+' m\u207b\u00b2 (gate-tuned)'),
+          ),
         ),
         h('div', {className:'eq'}, 'R\u2095 = 1/(n\u00b7e) = '+fmtSci(mp.RH)+' | \u03c3 = n\u00b7e\u00b7\u03bc = '+fmtSci(mp.sigma)+' S/m'),
         !isCustomMat && h('div',{className:'note'}, mat.desc+' \u2014 '+mat.ref),
@@ -677,6 +732,7 @@ function DesignerPage({matIdx, setMatIdx, customMat, setCustomMat,
         h('table', {className:'props-table'},
           h('tbody', null,
             h('tr',null, h('td',null,'Material'), h('td',null, isCustomMat ? 'Custom' : mat.name)),
+            mat.gate && Vg !== null && h('tr',null, h('td',null,'Gate V\u1d33'), h('td',{className:'computed'}, Vg.toFixed(1)+' V')),
             h('tr',null, h('td',null,'Sensor'), h('td',null, (activeSensor.size*1e6).toFixed(1)+' \u00d7 '+(activeSensor.size*1e6).toFixed(1)+' \u00b5m')),
             h('tr',null, h('td',null,'Bead'), h('td',null, beadMode==='custom' ? (customBead.d*1e6).toFixed(1)+' \u00b5m (custom)' : activeBead.name)),
             h('tr',null, h('td',null,'B\u2080'), h('td',null, B0+' mT')),
@@ -715,10 +771,11 @@ const SWEEP_VARS = [
   {id:'B0', name:'Applied field B\u2080', unit:'mT', min:10, max:500, steps:20, toSI:v=>v*1e-3},
   {id:'ch_height', name:'Channel height', unit:'\u00b5m', min:10, max:200, steps:20, toSI:v=>v*1e-6},
   {id:'distance', name:'Bead\u2013sensor distance', unit:'\u00b5m', min:0.5, max:30, steps:20, toSI:v=>v*1e-6},
+  {id:'gate_voltage', name:'Gate voltage V\u1d33', unit:'V', min:-60, max:60, steps:25, toSI:v=>v},
 ];
 
 function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
-  sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight}) {
+  sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight, Vg}) {
 
   const [sweepVar, setSweepVar] = useState(0);
   const [sweepMin, setSweepMin] = useState(SWEEP_VARS[0].min);
@@ -740,9 +797,15 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
 
   function onVarChange(idx) {
     setSweepVar(idx);
-    setSweepMin(SWEEP_VARS[idx].min);
-    setSweepMax(SWEEP_VARS[idx].max);
-    setSweepSteps(SWEEP_VARS[idx].steps);
+    const sv = SWEEP_VARS[idx];
+    if (sv.id === 'gate_voltage' && activeMat.gate) {
+      setSweepMin(activeMat.gate.Vg_range[0]);
+      setSweepMax(activeMat.gate.Vg_range[1]);
+    } else {
+      setSweepMin(sv.min);
+      setSweepMax(sv.max);
+    }
+    setSweepSteps(sv.steps);
   }
 
   function runSweep() {
@@ -760,7 +823,6 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
     }
 
     for (const mat of materialsToRun) {
-      const mp = computeMatProps(mat);
       const matResult = {material: mat.name || 'Custom', color: mat.color || '#94a3b8', points: []};
 
       for (const pv of paramValues) {
@@ -768,6 +830,7 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
         let bd = bead.d, mu_r = bead.mu_r, sSize = sensor.size, sT = sensor.t;
         let b0 = B0 * 1e-3, vb = vBias, dist = fixedHeight * 1e-6;
         let cH = chH * 1e-6, fv = flowVel * 1e-3, thr = threshold;
+        let sweepVg = Vg; // use current gate voltage
 
         // Override the swept variable
         if (sv.id === 'bead_d') bd = sv.toSI(pv);
@@ -776,7 +839,9 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
         else if (sv.id === 'B0') b0 = sv.toSI(pv);
         else if (sv.id === 'ch_height') cH = sv.toSI(pv);
         else if (sv.id === 'distance') dist = sv.toSI(pv);
+        else if (sv.id === 'gate_voltage') sweepVg = sv.toSI(pv);
 
+        const mp = computeMatProps(mat, sweepVg);
         const r_b = bd / 2;
         const mom = beadMoment(r_b, mu_r, b0);
 
@@ -1190,6 +1255,35 @@ function TheoryPage() {
       ),
     ),
 
+    // 6. Gate-Tunable 2D Materials
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 hall'}, 'Gate-Tunable Carrier Density'),
+      h('div', {className:'theory-p'}, 'For 2D Hall sensors on gated substrates, the carrier density n is modulated by the gate voltage V\u1d33. This enables in-situ tuning of R\u2095 and \u03c3 to optimize sensitivity for a given bead size and field strength.'),
+      EQ(
+        'n(V\u1d33) = \u221a(n\u1d63\u2091\u209b\u00b2 + n\u1d33\u2090\u209c\u2091\u00b2)',
+        h(React.Fragment, null,
+          h('span',null,'n\u1d33\u2090\u209c\u2091'), ' = C\u2092\u2093 \u00b7 |V\u1d33 \u2212 V\u0043\u004e\u0050| / e',
+          h('br'), h('span',null,'n\u1d63\u2091\u209b'), ' = residual carrier density at charge neutrality (m\u207b\u00b2)',
+          h('br'), h('span',null,'V\u0043\u004e\u0050'), ' = charge neutrality point voltage (V)',
+          h('br'), 'Smooth crossover avoids singularity at V\u1d33 = V\u0043\u004e\u0050',
+        ),
+        'Das Sarma et al., Rev. Mod. Phys. 83 (2011) 407\u2013470'
+      ),
+      EQ(
+        'C\u2092\u2093 = \u03b5\u2080 \u00b7 \u03b5\u1d63 / d\u2092\u2093',
+        h(React.Fragment, null,
+          h('span',null,'\u03b5\u1d63'), ' = relative permittivity of gate oxide',
+          h('br'), h('span',null,'d\u2092\u2093'), ' = oxide thickness (m)',
+          h('br'), 'SiO\u2082: \u03b5\u1d63 = 3.9, hBN: \u03b5\u1d63 = 3.5, Al\u2082O\u2083: \u03b5\u1d63 = 9.5',
+          h('br'), 'Typical: 285 nm SiO\u2082 \u2192 C\u2092\u2093 = 1.21 \u00d7 10\u207b\u2074 F/m\u00b2',
+        ),
+        'Novoselov et al., Science 306 (2004) 666\u2013669'
+      ),
+      h('div', {className:'theory-p', style:{fontSize:'11px',color:'var(--muted)',marginTop:'8px'}},
+        'Gate-tunable materials: ' + MATERIALS.filter(m => m.gate).map(m => m.name).join(', ') + '. Non-gated materials (bulk 3D, epitaxial) use fixed carrier density.'
+      ),
+    ),
+
     // Material Properties Table
     h('div', {className:'theory-section'},
       h('div', {className:'theory-h2 mat'}, 'Hall Sensor Material Library'),
@@ -1197,8 +1291,9 @@ function TheoryPage() {
         h('table', {className:'theory-table'},
           h('thead', null, h('tr', null,
             h('th', null, 'Material'), h('th', null, 'Type'),
-            h('th', null, '\u03bc (cm\u00b2/Vs)'), h('th', null, 'n (m\u207b\u00b2 or m\u207b\u00b3)'),
-            h('th', null, 'R\u2095'), h('th', null, '\u03c3 (S/m)'), h('th', null, 'Reference'),
+            h('th', null, '\u03bc (cm\u00b2/Vs)'), h('th', null, 'n (m\u207b\u00b2/\u00b3)'),
+            h('th', null, 'R\u2095'), h('th', null, '\u03c3 (S/m)'),
+            h('th', null, 'Gate'), h('th', null, 'Reference'),
           )),
           h('tbody', null, MATERIALS.map(m => {
             const mp = computeMatProps(m);
@@ -1209,6 +1304,7 @@ function TheoryPage() {
               h('td', {className:'mono'}, m.n.toExponential(0)),
               h('td', {className:'mono accent'}, fmtSci(mp.RH)),
               h('td', {className:'mono accent'}, fmtSci(mp.sigma)),
+              h('td', {className:'mono'}, m.gate ? '\u2713 '+m.gate.Vg_range[0]+'..'+m.gate.Vg_range[1]+'V' : '\u2014'),
               h('td', null, m.ref),
             );
           }))
@@ -1273,6 +1369,13 @@ function App() {
   // ── Material state ──
   const [matIdx, setMatIdx] = useState(0); // Graphene default
   const [customMat, setCustomMat] = useState({mu:3000, n:5e15, dim:'2D'});
+  const [Vg, setVg] = useState(null); // null = gate off, number = gate voltage
+
+  // Reset Vg when switching to non-gate material
+  useEffect(() => {
+    const mat = matIdx < MATERIALS.length ? MATERIALS[matIdx] : customMat;
+    if (!mat.gate && Vg !== null) setVg(null);
+  }, [matIdx]);
 
   // ── Sensor state ──
   const [sensMode, setSensMode] = useState('preset');
@@ -1302,7 +1405,7 @@ function App() {
   // ── Active config ──
   const isCustomMat = matIdx >= MATERIALS.length;
   const activeMat = isCustomMat ? customMat : MATERIALS[matIdx];
-  const mp = useMemo(() => computeMatProps(activeMat), [activeMat.mu, activeMat.n, activeMat.dim]);
+  const mp = useMemo(() => computeMatProps(activeMat, Vg), [activeMat.mu, activeMat.n, activeMat.dim, Vg]);
   const sensor = sensMode === 'custom' ? customSensor : SENSOR_PRESETS[sensIdx];
   const bead = beadMode === 'custom' ? customBead : BEAD_LIBRARY[beadIdx];
 
@@ -1572,11 +1675,11 @@ function App() {
       ? h(DesignerPage, {matIdx, setMatIdx, customMat, setCustomMat,
           beadIdx, setBeadIdx, beadMode, setBeadMode, customBead, setCustomBead,
           sensMode, setSensMode, sensIdx, setSensIdx, customSensor, setCustomSensor,
-          chH, setChH, flowVel, setFlowVel, B0, setB0,
+          chH, setChH, flowVel, setFlowVel, B0, setB0, Vg, setVg,
           goToSim: () => setPage('simulator')})
       : page === 'analysis'
       ? h(AnalysisPage, {matIdx, customMat, beadIdx, beadMode, customBead,
-          sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight})
+          sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight, Vg})
       : page === 'theory'
       ? h(TheoryPage)
       : h(React.Fragment, null,
@@ -1594,6 +1697,22 @@ function App() {
               h('div', null, h('b',null,'R\u2095 = '), fmtSci(activeRH)),
               h('div', null, h('b',null,'\u03c3 = '), fmtSci(activeSigma), ' S/m'),
               h('div', null, h('b',null,'|S\u1d62| = '), fmtSci(mp.SI), ' V/AT'),
+            ),
+            // Gate voltage control (2D gate-tunable materials only)
+            activeMat.gate && h('div', {style:{marginTop:'6px',paddingTop:'6px',borderTop:'1px solid var(--card-border)'}},
+              h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
+                h('span', {style:{fontSize:'9px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.5px',fontWeight:600}}, 'Gate Voltage'),
+                h('button', {className:'preset-btn', style:{fontSize:'8px',padding:'1px 6px'},
+                  onClick:()=>setVg(Vg === null ? 0 : null)},
+                  Vg === null ? 'Enable' : 'Off'),
+              ),
+              Vg !== null && h(Slider, {label:'V\u1d33', value:Vg, min:activeMat.gate.Vg_range[0], max:activeMat.gate.Vg_range[1],
+                step:Math.abs(activeMat.gate.Vg_range[1]-activeMat.gate.Vg_range[0])/100,
+                unit:' V', onChange:setVg, disabled:simState==='running'}),
+              Vg !== null && h('div', {className:'sim-info'},
+                h('div', null, h('b',null,'n(V\u1d33) = '), fmtSci(mp.n), ' m\u207b\u00b2'),
+                h('div', null, h('b',null,'V\u0043\u004e\u0050 = '), activeMat.gate.V_CNP, ' V'),
+              ),
             ),
           ),
 
