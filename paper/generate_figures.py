@@ -110,76 +110,144 @@ DBL_WIDTH = 7.0   # double column
 # ═══════════════════════════════════════════════════════════════════════
 
 def fig1_architecture():
-    fig, ax = plt.subplots(figsize=(DBL_WIDTH, 2.8))
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 4)
+    """
+    Clean top-down data-flow diagram:
+      Row 1: User Interface  →  React 18 State
+      Row 2: Physics engine (4 sequential submodules in dashed group)
+      Row 3: Rendering outputs (Three.js 3D + Canvas 2D)
+      Side:  Material DB and Bead Library feed into physics engine
+    """
+    fig, ax = plt.subplots(figsize=(COL_WIDTH * 2, 3.6))
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 7.2)
     ax.axis('off')
+    ax.set_aspect('equal')
 
-    box_style = dict(boxstyle='round,pad=0.3', facecolor='#f0f0f0', edgecolor='#333333', linewidth=0.8)
-    box_hl    = dict(boxstyle='round,pad=0.3', facecolor='#e8f4fd', edgecolor='#1a73e8', linewidth=0.8)
-    box_out   = dict(boxstyle='round,pad=0.3', facecolor='#fef3e2', edgecolor='#e8871a', linewidth=0.8)
+    # ── Color palette ──
+    C_INPUT   = '#e8edf2';  C_INPBDR  = '#4a6a8a'
+    C_COMP    = '#dce8f5';  C_COMPBDR = '#2c5f9e'
+    C_OUT     = '#fdf2e3';  C_OUTBDR  = '#a07828'
+    C_DATA    = '#e6f2e6';  C_DATABDR = '#3c7a3c'
+    C_ARROW   = '#333333';  C_LABEL   = '#555555'
+    C_GRPBG   = '#f4f7fb'
 
-    # User input
-    ax.text(0.8, 3.2, 'User\ninteraction', ha='center', va='center', fontsize=8, fontweight='bold',
-            bbox=dict(boxstyle='round,pad=0.35', facecolor='#e8e8e8', edgecolor='#555555', linewidth=0.8))
+    def draw_box(x, y, w, h, label, fc, ec, fontsize=8, bold=True, sublabel=None):
+        patch = FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.1',
+                               facecolor=fc, edgecolor=ec, linewidth=0.7)
+        ax.add_patch(patch)
+        fw = 'bold' if bold else 'normal'
+        if sublabel:
+            ax.text(x + w/2, y + h/2 + 0.15, label, ha='center', va='center',
+                    fontsize=fontsize, fontweight=fw, color='#222222')
+            ax.text(x + w/2, y + h/2 - 0.2, sublabel, ha='center', va='center',
+                    fontsize=max(fontsize - 2, 5.5), color='#777777')
+        else:
+            ax.text(x + w/2, y + h/2, label, ha='center', va='center',
+                    fontsize=fontsize, fontweight=fw, color='#222222')
 
-    # React state
-    ax.text(2.8, 3.2, 'React 18\nstate', ha='center', va='center', fontsize=8, fontweight='bold', bbox=box_style)
+    def harrow(x1, y1, x2, y2, color=C_ARROW, lw=0.7, dashed=False):
+        ls = (0, (4, 3)) if dashed else '-'
+        ax.annotate('', xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle='->', color=color, lw=lw,
+                                    mutation_scale=9, linestyle=ls,
+                                    shrinkA=1, shrinkB=1))
 
-    # Physics engine (central, highlighted)
-    ax.text(5.0, 3.2, 'Physics engine\n(Eqs. 1\u20139)', ha='center', va='center', fontsize=8,
-            fontweight='bold', bbox=box_hl)
+    # ── Layout constants ──
+    bw = 2.5    # standard box width
+    bh = 0.82   # standard box height
+    sw = 2.45   # submodule width
+    sh = 0.72   # submodule height
 
-    # Submodules
-    sub_y = 1.6
-    subs = [
-        (1.5, sub_y, 'Clausius\u2013Mossotti\nbead moment'),
-        (3.5, sub_y, 'Point-dipole\nstray field'),
-        (5.5, sub_y, 'Volume-averaged\nHall voltage'),
-        (7.5, sub_y, 'Poiseuille\ntransport'),
+    # ── ROW 1 (top, y=5.8): Input layer ──
+    r1y = 5.8
+    ui_x = 2.5
+    rs_x = 7.0
+    draw_box(ui_x, r1y, bw, bh, 'User interface', C_INPUT, C_INPBDR,
+             sublabel='sliders, dropdowns, presets')
+    draw_box(rs_x, r1y, bw, bh, 'React 18 state', C_INPUT, C_INPBDR,
+             sublabel='reactive parameters')
+
+    # UI -> React
+    harrow(ui_x + bw, r1y + bh/2, rs_x, r1y + bh/2)
+    ax.text((ui_x + bw + rs_x)/2, r1y + bh/2 + 0.25, 'setState',
+            ha='center', va='bottom', fontsize=6, color=C_LABEL, style='italic')
+
+    # ── ROW 2 (middle, y=3.5): Physics engine ──
+    # Dashed group box
+    grp_x, grp_y = 0.5, 3.15
+    grp_w, grp_h = 11.2, 1.55
+    grp = FancyBboxPatch((grp_x, grp_y), grp_w, grp_h,
+                          boxstyle='round,pad=0.12',
+                          facecolor=C_GRPBG, edgecolor=C_COMPBDR,
+                          linewidth=0.9, linestyle=(0, (5, 3)))
+    ax.add_patch(grp)
+    ax.text(grp_x + 0.3, grp_y + grp_h - 0.15,
+            'Physics engine (Eqs. 1\u20139)', fontsize=7.5,
+            fontweight='bold', color=C_COMPBDR, va='top')
+
+    # 4 submodules
+    sub_info = [
+        ('Bead magnetization', 'Clausius\u2013Mossotti, Eq. 1\u20132'),
+        ('Stray field',        'point-dipole $B_z$, Eq. 3'),
+        ('Hall voltage',       'volume-averaged, Eq. 4\u20135'),
+        ('Transport',          'Poiseuille flow, Eq. 8\u20139'),
     ]
-    for (sx, sy, label) in subs:
-        ax.text(sx, sy, label, ha='center', va='center', fontsize=7,
-                bbox=dict(boxstyle='round,pad=0.25', facecolor='#f7f7f7', edgecolor='#888888', linewidth=0.5))
+    sub_y = 3.35
+    sub_x0 = 0.85
+    sub_gap = 0.35
+    spos = []
+    for i, (lbl, sub) in enumerate(sub_info):
+        sx = sub_x0 + i * (sw + sub_gap)
+        draw_box(sx, sub_y, sw, sh, lbl, C_COMP, C_COMPBDR,
+                 fontsize=7, sublabel=sub)
+        spos.append(sx)
 
-    # Outputs
-    ax.text(7.5, 3.2, 'Three.js r160\n3D scene', ha='center', va='center', fontsize=8, fontweight='bold', bbox=box_out)
-    ax.text(9.3, 3.2, 'Canvas 2D\nsignal trace', ha='center', va='center', fontsize=8, fontweight='bold', bbox=box_out)
+    # Sequential arrows between submodules
+    for i in range(3):
+        harrow(spos[i] + sw, sub_y + sh/2, spos[i+1], sub_y + sh/2,
+               color=C_COMPBDR, lw=0.6)
 
-    # Material DB
-    ax.text(9.3, 1.6, 'Material DB\n(12 presets)', ha='center', va='center', fontsize=7,
-            bbox=dict(boxstyle='round,pad=0.25', facecolor='#f0f7f0', edgecolor='#4a8c4a', linewidth=0.5))
+    # React state -> Physics engine (vertical down)
+    rs_cx = rs_x + bw/2
+    harrow(rs_cx, r1y, rs_cx, grp_y + grp_h, color=C_COMPBDR)
+    ax.text(rs_cx + 0.45, (r1y + grp_y + grp_h)/2, 'useMemo',
+            ha='left', va='center', fontsize=6, color=C_LABEL, style='italic')
 
-    # Bead library
-    ax.text(9.3, 0.5, 'Bead library\n(8 presets)', ha='center', va='center', fontsize=7,
-            bbox=dict(boxstyle='round,pad=0.25', facecolor='#f0f7f0', edgecolor='#4a8c4a', linewidth=0.5))
+    # ── ROW 3 (bottom, y=1.6): Output layer ──
+    r3y = 1.6
+    o1_x = 3.0
+    o2_x = 7.0
+    draw_box(o1_x, r3y, bw, bh, 'Three.js 3D scene', C_OUT, C_OUTBDR,
+             sublabel='WebGL viewport')
+    draw_box(o2_x, r3y, bw, bh, 'Canvas signal trace', C_OUT, C_OUTBDR,
+             sublabel='real-time $\\Delta V_H(t)$')
 
-    # Arrows: User -> React -> Physics -> Outputs
-    arrow_kw = dict(arrowstyle='->', color='#333333', lw=0.8, mutation_scale=10)
-    ax.annotate('', xy=(2.0, 3.2), xytext=(1.45, 3.2), arrowprops=arrow_kw)
-    ax.annotate('', xy=(4.1, 3.2), xytext=(3.55, 3.2), arrowprops=arrow_kw)
-    ax.annotate('', xy=(6.7, 3.2), xytext=(5.9, 3.2), arrowprops=arrow_kw)
-    ax.annotate('', xy=(8.5, 3.2), xytext=(8.2, 3.2), arrowprops=arrow_kw)
+    # Physics -> Outputs (vertical down)
+    o1_cx = o1_x + bw/2
+    o2_cx = o2_x + bw/2
+    harrow(o1_cx, grp_y, o1_cx, r3y + bh, color=C_OUTBDR, lw=0.7)
+    harrow(o2_cx, grp_y, o2_cx, r3y + bh, color=C_OUTBDR, lw=0.7)
 
-    # Physics -> submodules
-    for (sx, sy, _) in subs:
-        ax.annotate('', xy=(sx, sy+0.42), xytext=(5.0, 3.2-0.42),
-                     arrowprops=dict(arrowstyle='->', color='#1a73e8', lw=0.5, mutation_scale=8))
+    # ── SIDE: Data sources (right column) ──
+    ds_x = 12.0
+    dw2 = 1.8
+    dh2 = 0.72
+    ds1_y = 4.2
+    ds2_y = 3.3
+    draw_box(ds_x, ds1_y, dw2, dh2, 'Material DB', C_DATA, C_DATABDR,
+             fontsize=7, sublabel='12 presets')
+    draw_box(ds_x, ds2_y, dw2, dh2, 'Bead library', C_DATA, C_DATABDR,
+             fontsize=7, sublabel='8 presets')
 
-    # Material/Bead DB -> Physics
-    ax.annotate('', xy=(5.9, 3.0), xytext=(8.6, 1.6),
-                arrowprops=dict(arrowstyle='->', color='#4a8c4a', lw=0.5, mutation_scale=8, ls='dashed'))
-    ax.annotate('', xy=(5.9, 2.9), xytext=(8.6, 0.5),
-                arrowprops=dict(arrowstyle='->', color='#4a8c4a', lw=0.5, mutation_scale=8, ls='dashed'))
+    # Data sources -> Physics group (horizontal left, dashed)
+    harrow(ds_x, ds1_y + dh2/2, grp_x + grp_w, ds1_y + dh2/2 - 0.15,
+           dashed=True, color=C_DATABDR, lw=0.6)
+    harrow(ds_x, ds2_y + dh2/2, grp_x + grp_w, ds2_y + dh2/2 + 0.1,
+           dashed=True, color=C_DATABDR, lw=0.6)
 
-    # Labels on arrows
-    ax.text(1.7, 3.5, 'sliders,\ndropdowns', ha='center', va='bottom', fontsize=6, color='#555555', style='italic')
-    ax.text(3.3, 3.5, 'setState', ha='center', va='bottom', fontsize=6, color='#555555', style='italic')
-    ax.text(6.3, 3.5, 'useMemo', ha='center', va='bottom', fontsize=6, color='#555555', style='italic')
-
-    # Bottom label
-    ax.text(5.0, 0.3, 'Single HTML file (~1000 lines) --- React 18 + Three.js r160 via CDN, no build tools',
-            ha='center', va='center', fontsize=7, color='#666666', style='italic')
+    # ── Footer ──
+    ax.text(7.0, 0.65, 'Single HTML file (~1000 lines); React 18 + Three.js r160 via CDN; no build tools or server',
+            ha='center', va='center', fontsize=6.5, color='#999999', style='italic')
 
     fig.savefig(os.path.join(OUTDIR, 'fig1_architecture.pdf'))
     fig.savefig(os.path.join(OUTDIR, 'fig1_architecture.png'))
