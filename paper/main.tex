@@ -296,7 +296,7 @@ This architecture eliminates all build tools, package managers, transpilation st
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{2.5cm}\textit{[Placeholder: Software architecture diagram showing React state $\rightarrow$ physics engine (Eqs.~1--9) $\rightarrow$ Three.js 3D scene + Canvas 2D signal trace. Arrows show data flow: user sliders $\rightarrow$ React state $\rightarrow$ useMemo physics computation $\rightarrow$ rendering outputs.]}\vspace{2.5cm}}}
+\includegraphics[width=\textwidth]{figures/fig1_architecture.pdf}
 \caption{Data-flow architecture of $\mu$Flow. User interactions update React state, which triggers memoized physics computations (Eqs.~\eqref{eq:moment}--\eqref{eq:advection}). Results feed both the Three.js 3D scene and the HTML5 Canvas signal trace panel. The simulation loop uses adaptive sub-stepping to capture narrow signal peaks.}
 \label{fig:architecture}
 \end{figure}
@@ -346,7 +346,7 @@ The Three.js 3D scene (Fig.~\ref{fig:screenshot}) renders four primary objects:
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{4cm}\textit{[Placeholder: Screenshot of $\mu$Flow interface showing (left) control panel with material, bead, and channel parameter groups; (center) Three.js 3D scene with transparent PDMS channel, Hall sensor on floor, Halbach magnet ring below, animated bead; (bottom) real-time $\Delta V_H$ signal trace on Canvas.]}\vspace{4cm}}}
+\includegraphics[width=\textwidth]{figures/fig2_screenshot.png}
 \caption{Screenshot of the $\mu$Flow Simulator tab. The left panel contains parameter controls organized by category (sensor material, bead properties, channel geometry, detection settings). The central viewport shows the 3D microfluidic scene with a superparamagnetic bead traversing the Hall sensor. The bottom panel displays the real-time $\Delta V_H$ signal trace. The header bar shows computed metrics ($\Delta V_H$, $\langle B_z \rangle$, detection count).}
 \label{fig:screenshot}
 \end{figure}
@@ -402,7 +402,7 @@ The agreement is within \SI{6}{\percent} for all three designs. The systematic t
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{3.5cm}\textit{[Placeholder: Bar chart comparing $\mu$Flow and COMSOL $\Delta V_H$ for Designs I, II, and III. Grouped bars (blue = COMSOL, orange = $\mu$Flow) with error percentages annotated. Y-axis: $\Delta V_H$ (mV), log scale.]}\vspace{3.5cm}}}
+\includegraphics[width=\columnwidth]{figures/fig3_validation.pdf}
 \caption{Validation of $\mu$Flow analytical results against COMSOL FEM-BEM simulations \cite{govindaraju2025} for three sensor designs. The relative error is below \SI{6}{\percent} in all cases. Design~II produces the largest signal due to the favorable bead-to-sensor area ratio.}
 \label{fig:validation}
 \end{figure}
@@ -432,7 +432,7 @@ Figure~\ref{fig:distance} shows $\Delta V_H$ as a function of bead-sensor distan
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{3.5cm}\textit{[Placeholder: Log-log plot of $\Delta V_H$ (mV) vs. bead-sensor distance $r$ (\si{\micro\meter}) for Design I (5~\si{\micro\meter} sensor, 2~\si{\micro\meter} bead), Design II (10~\si{\micro\meter}, 6~\si{\micro\meter}), and Design III (50~\si{\micro\meter}, 10~\si{\micro\meter}). Dashed lines show $1/r^3$ decay envelope. Shaded region marks typical microfluidic operating range $r = 1$--$5$~\si{\micro\meter}.]}\vspace{3.5cm}}}
+\includegraphics[width=\columnwidth]{figures/fig4_distance.pdf}
 \caption{Hall voltage $\Delta V_H$ versus bead-sensor distance for the three validated sensor designs. The $1/r^3$ dipolar decay is evident on the log-log scale. Design~II provides the best signal within the typical microfluidic operating range ($r = \SIrange{1}{5}{\micro\meter}$) due to its favorable bead-to-sensor area ratio.}
 \label{fig:distance}
 \end{figure}
@@ -447,7 +447,7 @@ Figure~\ref{fig:materials} compares the Hall voltage produced by all 12 material
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{3.5cm}\textit{[Placeholder: Horizontal bar chart of $\Delta V_H$ (mV) for all 12 materials at Design~II geometry, sorted by magnitude. Log scale on x-axis. Color coding by material family (green = graphene, blue = III--V 2D, purple = III--V 3D, gray = other). Numerical values annotated on each bar.]}\vspace{3.5cm}}}
+\includegraphics[width=\columnwidth]{figures/fig5_materials.pdf}
 \caption{Cross-material comparison of $\Delta V_H$ under identical geometry and bead conditions (Design~II, $B_0 = \SI{50}{\milli\tesla}$, $V_{\text{bias}} = \SI{5}{\volt}$). The Hall voltage is proportional to mobility for a given geometry; InSb QW and graphene/hBN produce the strongest signals. Si CMOS and AlGaN/GaN produce signals roughly 30$\times$ weaker but offer advantages in integration maturity and high-temperature operation, respectively.}
 \label{fig:materials}
 \end{figure}
@@ -462,7 +462,7 @@ The flow velocity $\bar{v}$ affects detection performance through two competing 
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{3.5cm}\textit{[Placeholder: Dual-axis plot. Left y-axis: detection rate (\%) vs. flow velocity $\bar{v}$ (\si{\milli\meter\per\second}). Right y-axis: mean peak $\Delta V_H$ (\si{\milli\volt}) vs. $\bar{v}$. Detection rate remains at 100\% up to $\sim$\SI{5}{\milli\meter\per\second}, then drops as beads transit too quickly for the sub-stepping to resolve the peak. Mean $\Delta V_H$ is approximately constant (height-dependent only). Shaded region marks optimal velocity window.]}\vspace{3.5cm}}}
+\includegraphics[width=\columnwidth]{figures/fig6_flowrate.pdf}
 \caption{Detection rate (left axis) and mean peak $\Delta V_H$ (right axis) versus mean flow velocity for 20 beads at Design~II geometry in range mode. An optimal velocity window exists at $\bar{v} = \SIrange{0.5}{5}{\milli\meter\per\second}$, balancing throughput against the requirement for adequate signal sampling.}
 \label{fig:flowrate}
 \end{figure}
@@ -477,7 +477,7 @@ $\mu$Flow's batch mode injects $N$ beads (configurable from 1 to 50) and records
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.92\columnwidth}{\centering\vspace{3.5cm}\textit{[Placeholder: Contour plot (heatmap) of $\Delta V_H$ (\si{\milli\volt}) as a function of bead diameter (y-axis, 1--15~\si{\micro\meter}) and sensor width (x-axis, 5--100~\si{\micro\meter}). Logarithmic color scale. White contour lines at 1, 10, 100~mV. Optimal region (high $\Delta V_H$) appears along a diagonal where bead-to-sensor area ratio is between 0.1 and 0.5. Designs I, II, III marked with star symbols.]}\vspace{3.5cm}}}
+\includegraphics[width=\columnwidth]{figures/fig7_sensitivity.pdf}
 \caption{Sensitivity map: $\Delta V_H$ as a function of bead diameter and sensor width ($B_0 = \SI{50}{\milli\tesla}$, $V_{\text{bias}} = \SI{5}{\volt}$, bead centered at $r = d_b/2 + \SI{0.1}{\micro\meter}$). The optimal signal lies along a diagonal corresponding to bead-to-sensor area ratios of 0.1--0.5. Stars mark the three validated designs.}
 \label{fig:sensitivity}
 \end{figure}
