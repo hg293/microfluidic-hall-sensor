@@ -23,6 +23,10 @@
   range-phrase=--,
   range-units=single
 }
+\DeclareSIUnit\decibel{dB}
+\DeclareSIUnit\minute{min}
+\DeclareSIUnit\hour{h}
+\DeclareSIUnit\day{d}
 
 \journal{Advances in Engineering Software}
 
@@ -57,7 +61,7 @@
             country={USA}}
 
 \begin{abstract}
-We present $\mu$Flow, an open-source, browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements four coupled analytical physics modules: Clausius--Mossotti bead magnetization, point-dipole stray-field computation, volume-averaged Hall voltage generation over an arbitrary sensor geometry, and Poiseuille microfluidic transport with optional magnetophoretic drift. A built-in material database provides 12 Hall sensor platforms (graphene, III--V semiconductors, Si CMOS, bismuth, topological insulators) and 8 commercial bead presets, all parameterized from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (\num{\sim 1000} lines) built on React~18 and Three.js, requiring no installation, no server, and no license. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app} and released under the MIT license.
+We present $\mu$Flow, an open-source, browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements four coupled analytical physics modules: Clausius--Mossotti bead magnetization, point-dipole stray-field computation, volume-averaged Hall voltage generation over an arbitrary sensor geometry, and Poiseuille microfluidic transport with optional magnetophoretic drift. A built-in material database provides 12 Hall sensor platforms (graphene, III--V semiconductors, Si CMOS, bismuth, topological insulators) and 8 commercial bead presets, all parameterized from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (${\sim}$\num{1000} lines) built on React~18 and Three.js, requiring no installation, no server, and no license. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app} and released under the MIT license.
 \end{abstract}
 
 \begin{keyword}
@@ -404,7 +408,7 @@ The agreement is within \SI{6}{\percent} for all three designs. The systematic t
 \label{fig:validation}
 \end{figure}
 
-The linear dependence of $\Delta V_H$ on $V_{\text{bias}}$ was also verified. At Design~I geometry, increasing $V_{\text{bias}}$ from \SIrange{1}{5}{\volt} produced a linear $\Delta V_H$ response with slope \SI{\sim 0.078}{\volt\per\volt}, consistent with the COMSOL-reported value in \cite{govindaraju2025}. This linearity confirms that the product $R_H \cdot \sigma \cdot V_{\text{bias}}$ in Eq.~\eqref{eq:vh} correctly captures the bias dependence.
+The linear dependence of $\Delta V_H$ on $V_{\text{bias}}$ was also verified. At Design~I geometry, increasing $V_{\text{bias}}$ from \SIrange{1}{5}{\volt} produced a linear $\Delta V_H$ response with slope ${\sim}$\,\SI{0.078}{\volt\per\volt}, consistent with the COMSOL-reported value in \cite{govindaraju2025}. This linearity confirms that the product $R_H \cdot \sigma \cdot V_{\text{bias}}$ in Eq.~\eqref{eq:vh} correctly captures the bias dependence.
 
 % ------------------------------------------------------------------------
 \subsection{Comparison with published experimental data}
@@ -515,10 +519,10 @@ Table~\ref{tab:performance} compares the computational cost of $\mu$Flow against
 \toprule
 Task & $\mu$Flow & COMSOL (est.) \\
 \midrule
-Single $\Delta V_H$ evaluation & \SI{<1}{\milli\second} & \SI{\sim 5}{\minute} \\
-3-design validation sweep & \SI{<10}{\milli\second} & \SI{\sim 15}{\minute} \\
-100-point geometry sweep & \SI{0.3}{\second} & \SI{\sim 8}{\hour} \\
-$12 \times 100$ material-geometry sweep & \SI{3}{\second} & \SI{\sim 4}{\day} \\
+Single $\Delta V_H$ evaluation & ${<}$\,\SI{1}{\milli\second} & ${\sim}$\,\SI{5}{\minute} \\
+3-design validation sweep & ${<}$\,\SI{10}{\milli\second} & ${\sim}$\,\SI{15}{\minute} \\
+100-point geometry sweep & \SI{0.3}{\second} & ${\sim}$\,\SI{8}{\hour} \\
+$12 \times 100$ material-geometry sweep & \SI{3}{\second} & ${\sim}$\,\SI{4}{\day} \\
 20-bead batch with statistics & \SI{5}{\second} & Not available \\
 \bottomrule
 \end{tabular}
