@@ -578,16 +578,22 @@ class FluidScene {
     // Support ring
     const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.12, 8, 32), new THREE.MeshStandardMaterial({color:0x334155, metalness:0.8, roughness:0.2}));
     ring.rotation.y = Math.PI / 2; this.chmaGroup.add(ring);
-    // Uniform transverse field arrows inside bore (pointing -Y, perpendicular to bore axis)
-    for (let xi = -4; xi <= 4; xi += 4) {
-      const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(xi, 3, 0), 3, 0x06b6d4, 0.4, 0.2);
-      arrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.25; }}); this.chmaGroup.add(arrow);
+    // B₀ field arrows: perpendicular to sensor plane (pointing -Y, through bore center to sensor)
+    // These represent the uniform applied field from the Halbach array
+    for (let xi = -5; xi <= 5; xi += 5) {
+      for (let zi = -1; zi <= 1; zi += 2) {
+        const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(xi, 5, zi * 0.5), 5.5, 0x06b6d4, 0.5, 0.25);
+        arrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.2; }}); this.chmaGroup.add(arrow);
+      }
     }
-    // B0 label (transverse field pointing down through sensor)
-    const bc = document.createElement('canvas'); bc.width = 128; bc.height = 32;
-    const bctx = bc.getContext('2d'); bctx.fillStyle = '#06b6d4'; bctx.font = 'bold 14px JetBrains Mono'; bctx.fillText('B\u2080 (transverse)', 4, 22);
+    // Central bold arrow: B₀ straight down through sensor
+    const mainArrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 5.5, 0), 6, 0x06b6d4, 0.7, 0.35);
+    mainArrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.4; }}); this.chmaGroup.add(mainArrow);
+    // B0 label: perpendicular to sensor, not "transverse"
+    const bc = document.createElement('canvas'); bc.width = 180; bc.height = 32;
+    const bctx = bc.getContext('2d'); bctx.fillStyle = '#06b6d4'; bctx.font = 'bold 14px JetBrains Mono'; bctx.fillText('B\u2080 \u22A5 sensor plane', 4, 22);
     const bsp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(bc), transparent:true, opacity:0.5}));
-    bsp.scale.set(4.5, 1, 1); bsp.position.set(0, 4.8, 0); this.chmaGroup.add(bsp);
+    bsp.scale.set(5.5, 1, 1); bsp.position.set(0, 5.5, 0); this.chmaGroup.add(bsp);
     // Bottom label
     const lc = document.createElement('canvas'); lc.width = 512; lc.height = 32;
     const lctx = lc.getContext('2d'); lctx.fillStyle = '#64748b'; lctx.font = '13px DM Sans';
@@ -822,7 +828,7 @@ const SWEEP_VARS = [
   {id:'flow_vel', name:'Flow velocity', unit:'mm/s', min:0.1, max:20, steps:20, toSI:v=>v*1e-3},
   {id:'B0', name:'Applied field B\u2080', unit:'mT', min:10, max:500, steps:20, toSI:v=>v*1e-3},
   {id:'ch_height', name:'Channel height', unit:'\u00b5m', min:10, max:200, steps:20, toSI:v=>v*1e-6},
-  {id:'distance', name:'Bead\u2013sensor distance', unit:'\u00b5m', min:0.5, max:30, steps:20, toSI:v=>v*1e-6},
+  {id:'distance', name:'Height above sensor', unit:'\u00b5m', min:0.5, max:30, steps:20, toSI:v=>v*1e-6},
   {id:'gate_voltage', name:'Gate voltage V\u1d33', unit:'V', min:-60, max:60, steps:25, toSI:v=>v},
 ];
 
@@ -1160,7 +1166,7 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
             h('tr',null, h('td',null,'V\u2090\u1d62\u2090\u209b'), h('td',null, vBias+' V')),
             h('tr',null, h('td',null,'Channel H'), h('td',null, chH+' \u00b5m')),
             h('tr',null, h('td',null,'Flow v\u0304'), h('td',null, flowVel+' mm/s')),
-            h('tr',null, h('td',null,'Distance'), h('td',null, fixedHeight+' \u00b5m')),
+            h('tr',null, h('td',null,'Height above sensor'), h('td',null, fixedHeight+' \u00b5m')),
             h('tr',null, h('td',null,'Threshold'), h('td',null, threshold+' mV')),
           )
         ),
@@ -1906,7 +1912,7 @@ function App() {
           // Channel
           h('div', {className:'group'},
             h('div', {className:'group-title ch'}, 'Microfluidic Channel'),
-            h(Slider, {label:'Height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running'}),
+            h(Slider, {label:'Channel height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running'}),
             h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running'}),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'Q: '), Q_uLmin < 0.001 ? Q_uLmin.toExponential(2) : Q_uLmin.toFixed(4), ' \u00b5L/min'),
@@ -1940,16 +1946,16 @@ function App() {
 
           // Height mode
           h('div', {className:'group'},
-            h('div', {className:'group-title'}, 'Bead\u2013Sensor Distance'),
+            h('div', {className:'group-title'}, 'Height Above Sensor'),
             h('div', {className:'mode-tabs'},
-              h('button', {className:'mode-tab'+(heightMode==='fixed'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed r'),
+              h('button', {className:'mode-tab'+(heightMode==='fixed'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed'),
               h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random'),
             ),
             heightMode === 'fixed'
-              ? h(Slider, {label:'r', value:fixedHeight, min:0.5, max:30, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running'})
+              ? h(Slider, {label:'h (above sensor)', value:fixedHeight, min:0.5, max:30, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running'})
               : h('div', null,
-                  h(Slider, {label:'Min r', value:minHeight, min:0.5, max:20, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running'}),
-                  h(Slider, {label:'Max r', value:maxHeight, min:1, max:40, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running'}),
+                  h(Slider, {label:'Min h', value:minHeight, min:0.5, max:20, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running'}),
+                  h(Slider, {label:'Max h', value:maxHeight, min:1, max:40, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running'}),
                 ),
           ),
 
