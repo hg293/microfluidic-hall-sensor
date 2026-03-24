@@ -1460,7 +1460,8 @@ function App() {
   const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
   const SCENE_LEN = 30, SCENE_H = 4, SCENE_W = 3;
   const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H / chH_m, scaleZ = SCENE_W / chW_m;
-  const rScene = Math.max(0.12, r_bead * scaleY * 1.3);
+  const beadSceneScale = SCENE_W / (sensor.size || 10e-6); // scale bead relative to sensor width
+  const rScene = Math.max(0.12, r_bead * beadSceneScale * 0.9);
   const Q_uLmin = vAvg * chW_m * chH_m * 60 * 1e6;
 
   // ── Refs ──
