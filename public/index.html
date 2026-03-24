@@ -36,7 +36,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* ── Header ── */
 .header{grid-column:1/-1;display:flex;align-items:center;padding:0 24px;gap:20px;background:linear-gradient(180deg,rgba(13,20,36,0.97),rgba(10,16,30,0.95));border-bottom:1px solid var(--card-border);backdrop-filter:blur(8px);z-index:10}
-.header-brand{display:flex;align-items:baseline;gap:6px;min-width:0}
+.header-brand{display:flex;align-items:baseline;gap:8px;min-width:0;overflow:hidden}
 .header-brand h1{font-size:var(--fs-2xl);font-weight:700;letter-spacing:0.3px;white-space:nowrap}
 .header-brand h1 .brand{color:var(--primary)}
 .header-brand .sub{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
@@ -125,7 +125,7 @@ input[type=range]:disabled{opacity:0.4}
 .scene-container canvas{display:block;width:100%!important;height:100%!important}
 .trace-panel{border-top:1px solid var(--card-border);background:rgba(8,12,24,0.95);position:relative}
 .trace-panel canvas{display:block;width:100%;height:100%}
-.trace-label{position:absolute;top:6px;left:10px;font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);z-index:1;pointer-events:none}
+.trace-label{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);z-index:1;pointer-events:none;white-space:nowrap}
 .ctrl-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
 .ctrl-btn{font-size:var(--fs-sm);padding:6px 18px;border-radius:6px;border:1px solid var(--subtle);background:rgba(13,20,36,0.85);color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;backdrop-filter:blur(4px);transition:all 0.15s}
 .ctrl-btn:hover{border-color:var(--primary);color:var(--primary)}
@@ -998,7 +998,7 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
     // Axis labels (responsive)
     ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + chartFS(W,'axisLabel') + 'px DM Sans'; ctx.textAlign = 'center';
     ctx.fillText(sweepData.variable.name + ' (' + sweepData.variable.unit + ')', pad.left + dW / 2, H - 6);
-    ctx.save(); ctx.translate(14, pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.save(); ctx.translate(Math.round(chartFS(W,'axisLabel') * 0.7), pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillText('Peak \u0394V\u2095 (mV)', 0, 0); ctx.restore();
     // X ticks
     ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
@@ -1065,7 +1065,7 @@ function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
     // Axis labels (responsive)
     ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + chartFS(W,'axisLabel') + 'px DM Sans'; ctx.textAlign = 'center';
     ctx.fillText(sweepData.variable.name + ' (' + sweepData.variable.unit + ')', pad.left + dW / 2, H - 6);
-    ctx.save(); ctx.translate(14, pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.save(); ctx.translate(Math.round(chartFS(W,'axisLabel') * 0.7), pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
     ctx.fillText('Detection Rate (%)', 0, 0); ctx.restore();
     ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
     const nTicks = Math.min(sweepData.paramValues.length, 8);
@@ -1211,7 +1211,7 @@ function IntroPage({onEnter}) {
     h('div', {className:'intro-logo'}, h('span', {className:'mu'}, '\u00B5'), 'Flow'),
     h('div', {className:'intro-tagline'}, '3D Microfluidic Hall-Effect Sensor Simulator'),
     h('div', {className:'intro-desc'},
-      'An open-source, browser-based simulation platform for designing and optimizing graphene Hall-effect biosensors. ' +
+      'A browser-based simulation platform for designing and optimizing microfluidic Hall-effect biosensors. ' +
       'Model bead magnetization, stray fields, Poiseuille flow, and Hall voltage response \u2014 all in real time with interactive 3D visualization.'
     ),
     h('div', {className:'intro-features'},
@@ -1256,9 +1256,10 @@ function IntroPage({onEnter}) {
       ),
     ),
     h('div', {className:'intro-footer'},
-      'Govindaraju & Hassan (2025) \u00B7 ',
-      h('a', {href:'https://github.com/hg293/graphene-hall-sensor', target:'_blank'}, 'GitHub'),
-      ' \u00B7 Advances in Engineering Software'
+      '\u00A9 2025 Govindaraju & Hassan. All rights reserved.',
+      h('br'),
+      'Advances in Engineering Software \u00B7 Contact: ',
+      h('a', {href:'mailto:harshitha.g@rutgers.edu'}, 'harshitha.g@rutgers.edu'),
     ),
   );
 }
@@ -1701,8 +1702,9 @@ function App() {
     if (canvas.width !== W*2 || canvas.height !== H*2) { canvas.width = W*2; canvas.height = H*2; }
     const ctx = canvas.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0); ctx.clearRect(0, 0, W, H);
     const sim = simRef.current;
-    const tPadL = Math.round(18 + chartFS(W,'tickValue') * 5);
-    const pad = {top:22, bottom:Math.round(chartFS(W,'axisLabel') * 2), left:tPadL, right:15};
+    const axFS = chartFS(W,'axisLabel'), tkFS = chartFS(W,'tickValue');
+    const tPadL = Math.round(axFS * 1.4 + tkFS * 5);
+    const pad = {top:28, bottom:Math.round(axFS * 2.4), left:tPadL, right:15};
     const dW = W - pad.left - pad.right, dH = H - pad.top - pad.bottom;
     const maxV = Math.max(threshold * 3, sim.peakSignal * 1.3, 5);
     const buf = sim.signalBuf;
@@ -1745,11 +1747,11 @@ function App() {
       }
       ctx.stroke();
     }
-    ctx.save(); ctx.translate(12, pad.top + dH/2); ctx.rotate(-Math.PI/2);
-    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + chartFS(W,'axisLabel') + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.save(); ctx.translate(Math.round(axFS * 0.7), pad.top + dH/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS + 'px DM Sans'; ctx.textAlign = 'center';
     ctx.fillText('\u0394V_H (mV)', 0, 0); ctx.restore();
-    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + chartFS(W,'axisLabel') + 'px DM Sans'; ctx.textAlign = 'center';
-    ctx.fillText('Time (s)', pad.left + dW/2, pad.top + dH + chartFS(W,'axisLabel') + 6);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('Time (s)', pad.left + dW/2, pad.top + dH + axFS + 6);
     if (buf.length > 1) {
       const tMax = buf[buf.length-1].t, tMin = buf[0].t;
       ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
@@ -1792,7 +1794,7 @@ function App() {
     h('div', {className:'header'},
       h('div', {className:'header-brand'},
         h('h1', null, h('span', {className:'brand'}, '\u00B5Flow'), ' 3D Microfluidic Hall Sensor'),
-        h('span', {className:'sub'}, 'Govindaraju & Hassan (2025)'),
+        h('span', {className:'sub'}, '\u00A9 2025 Govindaraju & Hassan'),
       ),
       h('div', {className:'nav-tabs'},
         h('button', {className:'nav-tab'+(page==='simulator'?' active':''), onClick:()=>setPage('simulator')}, '\u25b6 Simulator'),
