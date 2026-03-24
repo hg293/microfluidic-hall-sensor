@@ -288,6 +288,26 @@ input[type=range]:disabled{opacity:0.4}
 .export-csv-btn{width:100%;padding:8px;border-radius:5px;border:1px solid var(--card-border);background:transparent;color:var(--muted);font-size:var(--fs-xs);font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;transition:all 0.15s;letter-spacing:0.5px;text-transform:uppercase;font-weight:600}
 .export-csv-btn:hover{border-color:var(--primary);color:var(--primary)}
 .app-copyright{position:fixed;bottom:8px;right:14px;font-size:var(--fs-xs);color:rgba(100,116,139,0.5);z-index:5;pointer-events:none;letter-spacing:0.3px}
+
+/* ── FEM Solver Page ── */
+.fem-wrap{overflow-y:auto;padding:24px 32px;height:calc(100vh - 64px);display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr auto;gap:16px}
+.fem-controls{grid-row:1/3;display:flex;flex-direction:column;gap:10px}
+.fem-canvas-wrap{position:relative;border:1px solid var(--card-border);border-radius:10px;background:var(--card);overflow:hidden;min-height:400px}
+.fem-canvas-wrap canvas{display:block;width:100%;height:100%}
+.fem-comparison{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px;min-height:180px}
+.fem-comparison canvas{display:block;width:100%;height:160px}
+.fem-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+.fem-result-card{background:rgba(6,182,212,0.04);border:1px solid var(--card-border);border-radius:8px;padding:10px 12px;text-align:center}
+.fem-result-label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.fem-result-value{font-size:var(--fs-lg);font-family:'JetBrains Mono',monospace;color:var(--primary)}
+.fem-result-value.warn{color:var(--gold)}
+.fem-result-value.good{color:var(--signal)}
+.fem-solve-btn{width:100%;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--primary),#0891b2);color:#fff;font-size:var(--fs-md);font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s}
+.fem-solve-btn:hover{filter:brightness(1.15)}
+.fem-solve-btn:disabled{opacity:0.5;cursor:not-allowed}
+.fem-status{font-size:var(--fs-xs);color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:6px;line-height:1.5}
+.fem-legend{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:8px;font-size:var(--fs-xs);color:var(--muted)}
+.fem-legend .swatch{width:14px;height:10px;border-radius:2px;border:1px solid rgba(255,255,255,0.1)}
 </style>
 </head>
 <body>
@@ -1245,6 +1265,11 @@ function IntroPage({onEnter}) {
         h('div', {className:'intro-feat-title'}, 'Physics Reference'),
         h('div', {className:'intro-feat-sub'}, 'Complete equations, material tables, and literature citations')
       ),
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\uD83D\uDD2C'),
+        h('div', {className:'intro-feat-title'}, 'FEM Solver'),
+        h('div', {className:'intro-feat-sub'}, '2D axisymmetric finite element validation with live field visualization')
+      ),
     ),
     h('button', {className:'intro-enter', onClick: onEnter}, 'Launch Simulator \u2192'),
     h('div', {className:'intro-stats'},
@@ -1257,7 +1282,7 @@ function IntroPage({onEnter}) {
         h('div', {className:'intro-stat-label'}, 'Bead Presets'),
       ),
       h('div', {className:'intro-stat'},
-        h('div', {className:'intro-stat-num'}, '4'),
+        h('div', {className:'intro-stat-num'}, '5'),
         h('div', {className:'intro-stat-label'}, 'Physics Modules'),
       ),
       h('div', {className:'intro-stat'},
@@ -1511,6 +1536,527 @@ function TheoryPage() {
         h('li', null, h('strong',null,'Bruus'), ', ', h('em',null,'Theoretical Microfluidics'), ', Oxford University Press (2007).'),
         h('li', null, h('strong',null,'Popovic'), ', ', h('em',null,'Hall Effect Devices'), ', 2nd ed., CRC Press (2004).'),
       ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 2D AXISYMMETRIC FEM MAGNETOSTATIC SOLVER
+// Solves: (1/r)∂/∂r(r·μᵣ·∂φ/∂r) + ∂/∂z(μᵣ·∂φ/∂z) = 0
+// Linear triangular elements, PCG solver, adaptive structured mesh
+// ══════════════════════════════════════════════════════════════════════════════
+
+function femGridLines(lo, hi, n, features) {
+  const nS = 500, len = hi - lo;
+  const den = new Float64Array(nS);
+  for (let i = 0; i < nS; i++) {
+    const x = lo + len * (i + 0.5) / nS;
+    let d = 1;
+    for (const f of features) d += f.w / (1 + ((x - f.p) / f.s) ** 2);
+    den[i] = d;
+  }
+  const cum = new Float64Array(nS + 1);
+  for (let i = 0; i < nS; i++) cum[i + 1] = cum[i] + den[i];
+  const tot = cum[nS];
+  const lines = [lo];
+  for (let j = 1; j < n; j++) {
+    const tgt = tot * j / n;
+    let a = 0, b = nS;
+    while (b - a > 1) { const m = (a + b) >> 1; cum[m] < tgt ? a = m : b = m; }
+    const frac = (tgt - cum[a]) / (cum[b] - cum[a] || 1);
+    lines.push(lo + (a + frac) / nS * len);
+  }
+  lines.push(hi);
+  return lines;
+}
+
+function femCreateMesh(beadR, beadH, sensHW, sensT, muR, nG) {
+  const domR = Math.max(15 * beadR, 3 * sensHW, 8 * beadH);
+  const domZlo = -3 * sensT, domZhi = Math.max(domR * 0.8, beadH + 12 * beadR);
+  const rFeat = [{p:0,s:beadR*0.25,w:5},{p:beadR,s:beadR*0.3,w:12},{p:sensHW,s:sensHW*0.3,w:5}];
+  const zFeat = [{p:0,s:sensT*0.4,w:8},{p:beadH,s:beadR*0.3,w:12},
+                 {p:beadH+beadR,s:beadR*0.2,w:10},{p:beadH-beadR,s:beadR*0.2,w:10}];
+  const rs = femGridLines(0, domR, nG, rFeat);
+  const zs = femGridLines(domZlo, domZhi, nG, zFeat);
+  const nr = rs.length, nz = zs.length, nodes = [];
+  for (let iz = 0; iz < nz; iz++)
+    for (let ir = 0; ir < nr; ir++) nodes.push({r:rs[ir], z:zs[iz]});
+  const idx = (ir, iz) => iz * nr + ir;
+  const elements = [];
+  for (let iz = 0; iz < nz - 1; iz++)
+    for (let ir = 0; ir < nr - 1; ir++) {
+      const n00=idx(ir,iz), n10=idx(ir+1,iz), n01=idx(ir,iz+1), n11=idx(ir+1,iz+1);
+      elements.push({n:[n00,n10,n11]}); elements.push({n:[n00,n11,n01]});
+    }
+  for (const el of elements) {
+    const cr=(nodes[el.n[0]].r+nodes[el.n[1]].r+nodes[el.n[2]].r)/3;
+    const cz=(nodes[el.n[0]].z+nodes[el.n[1]].z+nodes[el.n[2]].z)/3;
+    const dist=Math.sqrt(cr*cr+(cz-beadH)**2);
+    el.muR = dist < beadR ? muR : 1.0;
+    el.inBead = dist < beadR;
+    el.cr = cr; el.cz = cz;
+  }
+  const bc = new Set();
+  for (let ir=0;ir<nr;ir++){bc.add(idx(ir,0));bc.add(idx(ir,nz-1));}
+  for (let iz=0;iz<nz;iz++) bc.add(idx(nr-1,iz));
+  return {nodes, elements, bc, nr, nz, domR, domZlo, domZhi, beadR, beadH, sensHW, sensT};
+}
+
+function femSolve(mesh, B0_T, tol, maxIter) {
+  const t0 = performance.now();
+  const H0 = B0_T / MU0, N = mesh.nodes.length;
+  const rows = new Array(N);
+  for (let i = 0; i < N; i++) rows[i] = new Map();
+  const rhs = new Float64Array(N);
+  function addK(i,j,v){rows[i].set(j,(rows[i].get(j)||0)+v);}
+
+  for (const el of mesh.elements) {
+    const [ni,nj,nk] = el.n;
+    const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+    const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+    const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+    const D=(rj-ri)*(zk-zi)-(rk-ri)*(zj-zi);
+    const A=Math.abs(D)/2;
+    if(A<1e-50) continue;
+    const br=[zj-zk,zk-zi,zi-zj], bz=[rk-rj,ri-rk,rj-ri];
+    const rBar=Math.max((ri+rj+rk)/3, 1e-15);
+    const c=el.muR*rBar/(4*A);
+    const ln=[ni,nj,nk];
+    for(let a=0;a<3;a++) for(let b=0;b<3;b++) addK(ln[a],ln[b],c*(br[a]*br[b]+bz[a]*bz[b]));
+  }
+
+  let maxD=0;
+  for(let i=0;i<N;i++) maxD=Math.max(maxD,rows[i].get(i)||0);
+  const pen=maxD*1e8;
+  for(const di of mesh.bc){
+    const g=H0*mesh.nodes[di].z;
+    rows[di].clear(); rows[di].set(di,pen); rhs[di]=g*pen;
+  }
+
+  const phi=new Float64Array(N);
+  for(let i=0;i<N;i++) phi[i]=H0*mesh.nodes[i].z;
+  const dInv=new Float64Array(N);
+  for(let i=0;i<N;i++) dInv[i]=1/(rows[i].get(i)||1);
+
+  function mv(x,y){for(let i=0;i<N;i++){let s=0;for(const[j,v]of rows[i])s+=v*x[j];y[i]=s;}}
+  const r=new Float64Array(N),z=new Float64Array(N),p=new Float64Array(N),Ap=new Float64Array(N);
+  const res=[];
+  mv(phi,Ap);
+  for(let i=0;i<N;i++)r[i]=rhs[i]-Ap[i];
+  for(let i=0;i<N;i++)z[i]=dInv[i]*r[i];
+  p.set(z);
+  let rz=0;for(let i=0;i<N;i++)rz+=r[i]*z[i];
+  let iter=0;
+  for(;iter<maxIter;iter++){
+    mv(p,Ap);
+    let pAp=0;for(let i=0;i<N;i++)pAp+=p[i]*Ap[i];
+    const alpha=rz/(pAp||1e-30);
+    for(let i=0;i<N;i++){phi[i]+=alpha*p[i];r[i]-=alpha*Ap[i];}
+    let rn=0;for(let i=0;i<N;i++)rn+=r[i]*r[i];
+    rn=Math.sqrt(rn); res.push(rn);
+    if(rn<tol) break;
+    for(let i=0;i<N;i++)z[i]=dInv[i]*r[i];
+    let rzn=0;for(let i=0;i<N;i++)rzn+=r[i]*z[i];
+    const beta=rzn/(rz||1e-30);
+    for(let i=0;i<N;i++)p[i]=z[i]+beta*p[i];
+    rz=rzn;
+  }
+  const solveTime = performance.now()-t0;
+  return {phi,res,iter:iter+1,solveTime,N};
+}
+
+function femField(mesh, phi, B0_T) {
+  const H0=B0_T/MU0;
+  return mesh.elements.map(el=>{
+    const [ni,nj,nk]=el.n;
+    const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+    const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+    const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+    const D=(rj-ri)*(zk-zi)-(rk-ri)*(zj-zi);
+    if(Math.abs(D)<1e-50) return {Br:0,Bz:-B0_T,dBz:0};
+    const dNdr=[(zj-zk)/D,(zk-zi)/D,(zi-zj)/D];
+    const dNdz=[(rk-rj)/D,(ri-rk)/D,(rj-ri)/D];
+    let dpdr=0,dpdz=0;
+    for(let a=0;a<3;a++){dpdr+=dNdr[a]*phi[el.n[a]];dpdz+=dNdz[a]*phi[el.n[a]];}
+    const Br=-MU0*el.muR*dpdr, Bz=-MU0*el.muR*dpdz;
+    return {Br, Bz, dBz:Bz-(-B0_T)};
+  });
+}
+
+function femSensorAvg(mesh, fd, sensHW) {
+  let sw=0,sn=0;
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    if(el.cz>-mesh.sensT*1.5&&el.cz<mesh.sensT*0.5&&el.cr<sensHW){
+      const [ni,nj,nk]=el.n;
+      const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+      const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+      const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+      const A=Math.abs((rj-ri)*(zk-zi)-(rk-ri)*(zj-zi))/2;
+      const w=A*Math.max(el.cr,1e-15);
+      sw+=fd[i].dBz*w; sn+=w;
+    }
+  }
+  return sn>0?sw/sn:0;
+}
+
+function femAnalyticalSensorAvg(mom, sensHW, beadH, sensT, nR) {
+  nR=nR||40;
+  let sw=0,sn=0;
+  for(let ir=0;ir<nR;ir++){
+    const r_=(ir+0.5)/nR*sensHW;
+    const Bz=(MU0/(4*Math.PI))*mom*(2*beadH*beadH-r_*r_)/Math.pow(r_*r_+beadH*beadH,2.5);
+    const w=r_;
+    sw+=Bz*w; sn+=w;
+  }
+  return sn>0?sw/sn:0;
+}
+
+function femDivColor(t) {
+  t=Math.max(-1,Math.min(1,t));
+  // Diverging: deep blue → dark bg → cyan/orange → bright
+  if(t>0){
+    const s=Math.sqrt(t); // sqrt for perceptual uniformity
+    return `rgb(${Math.round(6+40*s+209*s*s)},${Math.round(10+170*s+30*s*s)},${Math.round(20+160*s-140*s*s)})`;
+  } else {
+    const s=Math.sqrt(-t);
+    return `rgb(${Math.round(6+10*s+40*s*s)},${Math.round(10+20*s+30*s*s)},${Math.round(20+90*s+145*s*s)})`;
+  }
+}
+
+function drawFEMField(canvas, mesh, fd, cfg) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#060a14';ctx.fillRect(0,0,W,H);
+  const fs=chartFS(W,'axisLabel'), tfs=chartFS(W,'tickValue');
+  const pad={top:36,right:50,bottom:44,left:56};
+  const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+  const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+  const toP=(r,z)=>[pad.left+(r+rMax)/(2*rMax)*pW, pad.top+(1-(z-zMin)/(zMax-zMin))*pH];
+
+  let mxAbs=0;
+  for(const f of fd) mxAbs=Math.max(mxAbs,Math.abs(f.dBz));
+  if(mxAbs<1e-18) mxAbs=1;
+
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    const col=femDivColor(fd[i].dBz/mxAbs);
+    const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
+    ctx.fillStyle=col;
+    // Right side
+    ctx.beginPath();
+    let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
+    [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
+    [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
+    ctx.closePath();ctx.fill();
+    // Mirror left
+    ctx.beginPath();
+    [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
+    [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
+    [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
+    ctx.closePath();ctx.fill();
+  }
+
+  // Bead outline
+  const[bcx,bcy]=toP(0,mesh.beadH);
+  const brPx=mesh.beadR/(2*rMax)*pW;
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(bcx,bcy,brPx,0,Math.PI*2);ctx.stroke();
+  // Mirror
+  ctx.beginPath();ctx.arc(bcx,bcy,brPx,0,Math.PI*2);ctx.stroke();
+
+  // Sensor rectangle
+  const[sl,st]=toP(-mesh.sensHW,0),[sr,sb]=toP(mesh.sensHW,-mesh.sensT);
+  ctx.strokeStyle='#22d3ee';ctx.lineWidth=1.5;
+  ctx.strokeRect(sl,st,sr-sl,sb-st);
+
+  // Axis labels
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('r (\u00b5m)',pad.left+pW/2,H-8);
+  ctx.save();ctx.translate(14,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('z (\u00b5m)',0,0);ctx.restore();
+
+  // Tick marks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#64748b';ctx.textAlign='center';
+  const rTicks=[-rMax,-rMax/2,0,rMax/2,rMax];
+  for(const rv of rTicks){const[tx,ty]=toP(rv,zMin);ctx.fillText((rv*1e6).toFixed(0),tx,ty+tfs+4);}
+  ctx.textAlign='right';
+  const zSpan=zMax-zMin, zStep=Math.pow(10,Math.floor(Math.log10(zSpan)))*0.5;
+  for(let zv=Math.ceil(zMin/zStep)*zStep;zv<=zMax;zv+=zStep){
+    const[tx,ty]=toP(-rMax,zv);ctx.fillText((zv*1e6).toFixed(0),tx-6,ty+tfs*0.35);
+  }
+
+  // Title
+  ctx.fillStyle='#e2e8f0';ctx.font=`bold ${chartFS(W,'title')}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('\u0394Bz Perturbation Field',pad.left+pW/2,22);
+
+  // Color bar
+  const cbW=14,cbH=pH*0.6,cbX=W-pad.right+12,cbY=pad.top+(pH-cbH)/2;
+  for(let iy=0;iy<cbH;iy++){
+    const t=1-2*iy/cbH;
+    ctx.fillStyle=femDivColor(t);ctx.fillRect(cbX,cbY+iy,cbW,1.5);
+  }
+  ctx.font=`${tfs-1}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+  ctx.fillText('+'+(mxAbs*1e6).toExponential(1)+' \u00b5T',cbX+cbW+4,cbY+tfs);
+  ctx.fillText('0',cbX+cbW+4,cbY+cbH/2+tfs*0.35);
+  ctx.fillText('\u2212'+(mxAbs*1e6).toExponential(1),cbX+cbW+4,cbY+cbH);
+}
+
+function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,W,H);
+  const fs=chartFS(W,'axisLabel'),tfs=chartFS(W,'tickValue');
+  const pad={top:24,right:20,bottom:36,left:60};
+  const pW=W-pad.left-pad.right,pH=H-pad.top-pad.bottom;
+
+  // Extract ΔBz vs r along sensor surface (z ≈ 0)
+  const sensorEls=[];
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    if(Math.abs(el.cz)<mesh.sensT*2&&el.cr<mesh.domR*0.5){
+      sensorEls.push({r:el.cr,dBz:fd[i].dBz});
+    }
+  }
+  sensorEls.sort((a,b)=>a.r-b.r);
+
+  // Analytical curve
+  const nPts=100, rMaxPlot=mesh.domR*0.4;
+  const analyticalPts=[];
+  for(let i=0;i<nPts;i++){
+    const r_=(i+0.5)/nPts*rMaxPlot;
+    const h=mesh.beadH;
+    const dBz=(MU0/(4*Math.PI))*mom*(2*h*h-r_*r_)/Math.pow(r_*r_+h*h,2.5);
+    analyticalPts.push({r:r_,dBz});
+  }
+
+  // Find plot range
+  let yMin=0,yMax=0;
+  for(const p of sensorEls){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
+  for(const p of analyticalPts){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
+  const yPad=(yMax-yMin)*0.1||1e-6;yMin-=yPad;yMax+=yPad;
+
+  const toX=r=>pad.left+r/rMaxPlot*pW;
+  const toY=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*pH;
+
+  // Grid
+  ctx.strokeStyle='rgba(30,41,59,0.4)';ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){const y=pad.top+pH*i/4;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+pW,y);ctx.stroke();}
+
+  // Analytical line
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();
+  analyticalPts.forEach((p,i)=>{const x=toX(p.r),y=toY(p.dBz);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+
+  // FEM points (scatter)
+  ctx.fillStyle='rgba(6,182,212,0.6)';
+  const step=Math.max(1,Math.floor(sensorEls.length/200));
+  for(let i=0;i<sensorEls.length;i+=step){
+    const p=sensorEls[i];
+    if(p.r>rMaxPlot) continue;
+    const x=toX(p.r),y=toY(p.dBz);
+    ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();
+  }
+
+  // Sensor half-width marker
+  if(mesh.sensHW<rMaxPlot){
+    const sx=toX(mesh.sensHW);
+    ctx.strokeStyle='rgba(167,139,250,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(sx,pad.top);ctx.lineTo(sx,pad.top+pH);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#a78bfa';ctx.font=`${tfs-1}px "DM Sans"`;ctx.textAlign='center';
+    ctx.fillText('sensor edge',sx,pad.top-4);
+  }
+
+  // Labels
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('Radial distance r (\u00b5m)',pad.left+pW/2,H-4);
+  ctx.save();ctx.translate(12,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('\u0394Bz (T)',0,0);ctx.restore();
+
+  // Y ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#64748b';ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const v=yMin+(yMax-yMin)*i/4;
+    const y=pad.top+pH*(1-i/4);
+    ctx.fillText(v.toExponential(1),pad.left-6,y+tfs*0.35);
+  }
+  // X ticks
+  ctx.textAlign='center';
+  for(let i=0;i<=4;i++){
+    const r_=rMaxPlot*i/4;
+    ctx.fillText((r_*1e6).toFixed(0),toX(r_),pad.top+pH+tfs+4);
+  }
+
+  // Legend
+  ctx.font=`${tfs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillStyle='#22c55e';ctx.fillRect(pad.left+10,pad.top+6,16,3);
+  ctx.fillStyle='#94a3b8';ctx.fillText('Analytical (dipole)',pad.left+30,pad.top+12);
+  ctx.fillStyle='#06b6d4';ctx.beginPath();ctx.arc(pad.left+17,pad.top+24,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#94a3b8';ctx.fillText('FEM (axisymmetric)',pad.left+30,pad.top+28);
+}
+
+// ── FEM Page Component ──
+function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
+  sensMode, sensIdx, customSensor, B0, vBias, fixedHeight, Vg}) {
+
+  const canvasRef = useRef(null);
+  const compRef = useRef(null);
+  const [solving, setSolving] = useState(false);
+  const [result, setResult] = useState(null);
+  const [meshRes, setMeshRes] = useState('medium');
+  const [femBeadR, setFemBeadR] = useState(null);
+  const [femBeadH, setFemBeadH] = useState(null);
+  const [femB0, setFemB0] = useState(null);
+  const [femMuR, setFemMuR] = useState(null);
+
+  // Derive defaults from app state
+  const isCustomMat = matIdx >= MATERIALS.length;
+  const mat = isCustomMat ? customMat : MATERIALS[matIdx];
+  const mProps = computeMatProps(mat, Vg);
+  const bead = beadMode==='custom' ? customBead : BEAD_LIBRARY[beadIdx];
+  const bR = (femBeadR !== null ? femBeadR : (bead.d || bead.d_m || 2.83e-6) * 0.5);
+  const bMuR = femMuR !== null ? femMuR : (bead.mu_r || 10);
+  const bH = (femBeadH !== null ? femBeadH : fixedHeight) * 1e-6;
+  const b0 = (femB0 !== null ? femB0 : B0) * 1e-3;
+  const sensor = sensMode==='preset' ? [{size:5e-6,t:0.5e-6},{size:10e-6,t:1e-6},{size:50e-6,t:1e-6}][sensIdx] : customSensor;
+  const sensHW = sensor.size / 2;
+  const sensT = sensor.t;
+
+  const meshNMap = {coarse:40, medium:70, fine:100, ultra:140};
+  const nG = meshNMap[meshRes] || 70;
+
+  // Draw comparison chart after result state updates and DOM renders
+  useEffect(() => {
+    if (!result || !compRef.current) return;
+    const c = compRef.current;
+    const wrap = c.closest('.fem-comparison');
+    const W = (wrap ? wrap.clientWidth - 32 : 600);
+    c.width = W*2; c.height = 360; c.style.width = W+'px'; c.style.height = '180px';
+    drawFEMComparison(c, result.mesh, result.fd, result.mom, {});
+  }, [result]);
+
+  function doSolve() {
+    setSolving(true);
+    setTimeout(() => {
+      try {
+        const beadR_m = bR < 1e-3 ? bR : bR * 1e-6;
+        const beadH_m = bH < 1e-3 ? bH : bH * 1e-6;
+        const mesh = femCreateMesh(beadR_m, beadH_m, sensHW, sensT, bMuR, nG);
+        const sol = femSolve(mesh, b0, 1e-10, 2000);
+        const fd = femField(mesh, sol.phi, b0);
+        const femAvg = femSensorAvg(mesh, fd, sensHW);
+        const mom = beadMoment(beadR_m, bMuR, b0);
+        const anaAvg = femAnalyticalSensorAvg(mom, sensHW, beadH_m, sensT, 60);
+        const femDVH = Math.abs(mProps.RH * mProps.sigma * femAvg * vBias) * 1000;
+        const anaDVH = Math.abs(mProps.RH * mProps.sigma * anaAvg * vBias) * 1000;
+        const errPct = anaDVH > 0 ? Math.abs(femDVH - anaDVH) / anaDVH * 100 : 0;
+
+        setResult({mesh, fd, sol, femAvg, anaAvg, femDVH, anaDVH, errPct, mom,
+          nNodes: sol.N, nElems: mesh.elements.length, solveMs: sol.solveTime,
+          cgIter: sol.iter, finalRes: sol.res[sol.res.length-1]||0});
+
+        // Draw field map (canvas always in DOM)
+        requestAnimationFrame(() => {
+          if (canvasRef.current) {
+            const c = canvasRef.current;
+            const W = c.parentElement.clientWidth, H = c.parentElement.clientHeight || 400;
+            c.width = W*2; c.height = H*2; c.style.width = W+'px'; c.style.height = H+'px';
+            drawFEMField(c, mesh, fd, {});
+          }
+        });
+      } catch(e) { console.error('FEM solve error:', e); }
+      setSolving(false);
+    }, 50);
+  }
+
+  const bR_um = (bR < 1e-3 ? bR*1e6 : bR).toFixed(2);
+  const bH_um = (bH < 1e-3 ? bH*1e6 : bH).toFixed(1);
+
+  return h('div', {className:'fem-wrap'},
+    // Controls
+    h('div', {className:'fem-controls'},
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--bead)'}}), ' Bead'),
+        h(Slider, {label:'Radius', value:+bR_um, min:0.1, max:10, step:0.05, unit:' \u00b5m',
+          onChange:v=>setFemBeadR(v*1e-6)}),
+        h(Slider, {label:'\u03bc\u1d63', value:bMuR, min:2, max:100, step:1, unit:'',
+          onChange:v=>setFemMuR(v)}),
+        h(Slider, {label:'h above sensor', value:+bH_um, min:0.5, max:30, step:0.5, unit:' \u00b5m',
+          onChange:v=>setFemBeadH(v)}),
+      ),
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), ' Field & Sensor'),
+        h(Slider, {label:'B\u2080', value:femB0!==null?femB0:B0, min:10, max:500, step:5, unit:' mT',
+          onChange:v=>setFemB0(v)}),
+        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'4px'}},
+          'Sensor: '+(sensor.size*1e6).toFixed(0)+'\u00d7'+(sensor.size*1e6).toFixed(0)+' \u00b5m\u00b2, t='+(sensor.t*1e6).toFixed(1)+' \u00b5m'),
+        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'2px'}},
+          'Material: '+(isCustomMat?'Custom':mat.name)),
+      ),
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), ' Mesh'),
+        h('div', {className:'mode-tabs'},
+          ['coarse','medium','fine','ultra'].map(r =>
+            h('button', {key:r, className:'mode-tab'+(meshRes===r?' active':''),
+              onClick:()=>setMeshRes(r), disabled:solving},
+              r.charAt(0).toUpperCase()+r.slice(1))
+          )
+        ),
+        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'6px'}},
+          nG+'\u00d7'+nG+' grid \u2192 ~'+((nG)*(nG)*2).toLocaleString()+' elements'),
+      ),
+      h('button', {className:'fem-solve-btn', onClick:doSolve, disabled:solving},
+        solving ? 'Solving\u2026' : '\u25b6 Solve FEM'),
+      result && h('div', {className:'fem-status'},
+        h('div',null,'Nodes: '+result.nNodes.toLocaleString()+' | Elements: '+result.nElems.toLocaleString()),
+        h('div',null,'CG iterations: '+result.cgIter+' | Time: '+result.solveMs.toFixed(0)+' ms'),
+        h('div',null,'Final residual: '+result.finalRes.toExponential(2)),
+      ),
+      h('div', {className:'d-card', style:{marginTop:'auto',fontSize:'var(--fs-xs)',color:'var(--muted)',lineHeight:'1.6'}},
+        h('div',{style:{fontWeight:600,color:'var(--text)',marginBottom:'4px'}},'About this solver'),
+        '2D axisymmetric FEM for magnetostatic scalar potential. ',
+        'Linear triangular elements with adaptive mesh refinement near bead and sensor surfaces. ',
+        'Preconditioned conjugate gradient (diagonal) solver. ',
+        'Compares volume-averaged \u0394Bz at sensor vs. analytical point-dipole model.',
+      ),
+    ),
+
+    // Field visualization
+    h('div', {className:'fem-canvas-wrap'},
+      h('canvas', {ref:canvasRef}),
+      !result && h('div',{style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--muted)',fontSize:'var(--fs-md)'}},
+        'Configure parameters and click Solve FEM'),
+    ),
+
+    // Comparison panel
+    h('div', {className:'fem-comparison'},
+      result ? h(React.Fragment, null,
+        h('div', {className:'fem-results'},
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'FEM \u0394V\u2095'),
+            h('div', {className:'fem-result-value'}, result.femDVH.toFixed(4)+' mV'),
+          ),
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'Analytical \u0394V\u2095'),
+            h('div', {className:'fem-result-value'}, result.anaDVH.toFixed(4)+' mV'),
+          ),
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'Difference'),
+            h('div', {className:'fem-result-value '+(result.errPct<5?'good':result.errPct<15?'warn':'')},
+              result.errPct.toFixed(1)+'%'),
+          ),
+        ),
+        h('div',{style:{marginTop:'12px',height:'180px'}}, h('canvas', {ref:compRef, style:{width:'100%',height:'100%'}})),
+        h('div', {className:'fem-legend'},
+          h('span',{className:'swatch',style:{background:'#22c55e'}}), 'Analytical dipole',
+          h('span',{className:'swatch',style:{background:'#06b6d4'}}), 'FEM solution',
+        ),
+      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'20px'}},
+        'Solve to see FEM vs. analytical comparison and error quantification'),
     ),
   );
 }
@@ -1812,6 +2358,7 @@ function App() {
         h('button', {className:'nav-tab'+(page==='designer'?' active':''), onClick:()=>setPage('designer')}, '\u2699 Designer'),
         h('button', {className:'nav-tab'+(page==='analysis'?' active':''), onClick:()=>setPage('analysis')}, '\ud83d\udcca Analysis'),
         h('button', {className:'nav-tab'+(page==='theory'?' active':''), onClick:()=>setPage('theory')}, '\ud83d\udcd6 Theory'),
+        h('button', {className:'nav-tab'+(page==='fem'?' active':''), onClick:()=>setPage('fem')}, '\ud83d\udd2c FEM'),
       ),
       page === 'simulator' && h('div', {className:'header-metrics'},
         h('div', {className:'metric'},
@@ -1851,6 +2398,9 @@ function App() {
           sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight, Vg})
       : page === 'theory'
       ? h(TheoryPage)
+      : page === 'fem'
+      ? h(FEMPage, {matIdx, customMat, beadIdx, beadMode, customBead,
+          sensMode, sensIdx, customSensor, B0, vBias, fixedHeight, Vg})
       : h(React.Fragment, null,
         // ── Sidebar ──
         h('div', {className:'sidebar'},
