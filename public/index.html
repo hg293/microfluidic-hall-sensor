@@ -290,14 +290,25 @@ input[type=range]:disabled{opacity:0.4}
 .app-copyright{position:fixed;bottom:8px;right:14px;font-size:var(--fs-xs);color:rgba(100,116,139,0.5);z-index:5;pointer-events:none;letter-spacing:0.3px}
 
 /* ── FEM Solver Page ── */
-.fem-wrap{overflow-y:auto;padding:24px 32px;height:calc(100vh - 64px);display:grid;grid-template-columns:260px 1fr;grid-template-rows:1fr auto;gap:16px}
-.fem-controls{grid-row:1/3;display:flex;flex-direction:column;gap:10px}
-.fem-canvas-wrap{position:relative;border:1px solid var(--card-border);border-radius:10px;background:var(--card);overflow:hidden;min-height:400px}
-.fem-canvas-wrap canvas{display:block;width:100%;height:100%}
-.fem-comparison{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px;min-height:180px}
-.fem-comparison canvas{display:block;width:100%;height:160px}
-.fem-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
-.fem-result-card{background:rgba(6,182,212,0.04);border:1px solid var(--card-border);border-radius:8px;padding:10px 12px;text-align:center}
+.fem-wrap{overflow-y:auto;padding:20px 24px;height:calc(100vh - 64px);display:grid;grid-template-columns:270px 1fr 1fr;grid-template-rows:auto auto auto;gap:14px;align-content:start}
+.fem-controls{grid-row:1/4;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 104px)}
+.fem-controls::-webkit-scrollbar{width:3px}
+.fem-controls::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:2px}
+.fem-canvas-wrap{position:relative;border:1px solid var(--card-border);border-radius:10px;background:var(--card);overflow:hidden;min-height:400px;grid-column:2/4}
+.fem-canvas-wrap canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.fem-tooltip{position:absolute;pointer-events:none;background:rgba(6,10,20,0.92);border:1px solid var(--primary-dim);border-radius:6px;padding:8px 12px;font-size:var(--fs-xs);color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1.6;backdrop-filter:blur(6px);z-index:10;white-space:nowrap;opacity:0;transition:opacity 0.12s}
+.fem-tooltip.vis{opacity:1}
+.fem-tooltip .tt-label{color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+.fem-tooltip .tt-val{color:var(--primary);font-weight:500}
+.fem-tooltip .tt-val.pos{color:#f59e0b}
+.fem-tooltip .tt-val.neg{color:#3b82f6}
+.fem-comparison{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px}
+.fem-comparison canvas{display:block;width:100%;cursor:crosshair}
+.fem-convergence{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px}
+.fem-convergence canvas{display:block;width:100%}
+.fem-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.fem-result-card{background:rgba(6,182,212,0.04);border:1px solid var(--card-border);border-radius:8px;padding:10px 12px;text-align:center;transition:border-color 0.2s}
+.fem-result-card:hover{border-color:rgba(6,182,212,0.3)}
 .fem-result-label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
 .fem-result-value{font-size:var(--fs-lg);font-family:'JetBrains Mono',monospace;color:var(--primary)}
 .fem-result-value.warn{color:var(--gold)}
@@ -306,8 +317,18 @@ input[type=range]:disabled{opacity:0.4}
 .fem-solve-btn:hover{filter:brightness(1.15)}
 .fem-solve-btn:disabled{opacity:0.5;cursor:not-allowed}
 .fem-status{font-size:var(--fs-xs);color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:6px;line-height:1.5}
-.fem-legend{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:8px;font-size:var(--fs-xs);color:var(--muted)}
-.fem-legend .swatch{width:14px;height:10px;border-radius:2px;border:1px solid rgba(255,255,255,0.1)}
+.fem-view-tabs{display:flex;gap:2px;margin-bottom:8px}
+.fem-view-tab{flex:1;text-align:center;font-size:var(--fs-xs);padding:5px 8px;border-radius:4px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.15s}
+.fem-view-tab:hover{color:var(--text);border-color:var(--primary-dim)}
+.fem-view-tab.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.fem-explain{font-size:var(--fs-xs);color:var(--muted);line-height:1.65;padding:10px 12px;background:rgba(6,182,212,0.03);border:1px solid var(--card-border);border-radius:8px;margin-top:8px}
+.fem-explain b{color:#94a3b8;font-weight:600}
+.fem-explain .eq-inline{font-family:'JetBrains Mono',monospace;color:var(--primary);font-size:var(--fs-xs);background:rgba(6,182,212,0.06);padding:1px 5px;border-radius:3px}
+.fem-progress{width:100%;height:4px;border-radius:2px;background:var(--subtle);overflow:hidden;margin-top:6px}
+.fem-progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--signal));border-radius:2px;transition:width 0.1s}
+.fem-mesh-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5;margin-top:4px;display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.fem-mesh-info .mi-label{color:#64748b}
+.fem-mesh-info .mi-val{font-family:'JetBrains Mono',monospace;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -1713,15 +1734,33 @@ function femAnalyticalSensorAvg(mom, sensHW, beadH, sensT, nR) {
 }
 
 function femDivColor(t) {
+  // Diverging colormap: blue → near-black midpoint → red/amber
+  // Perceptually uniform with sqrt scaling, dark-theme friendly
   t=Math.max(-1,Math.min(1,t));
-  // Diverging: deep blue → dark bg → cyan/orange → bright
-  if(t>0){
-    const s=Math.sqrt(t); // sqrt for perceptual uniformity
-    return `rgb(${Math.round(6+40*s+209*s*s)},${Math.round(10+170*s+30*s*s)},${Math.round(20+160*s-140*s*s)})`;
+  if(t>=0){
+    const s=Math.sqrt(t);
+    const r=Math.round(12+80*s+163*s*s);  // 12 → 255
+    const g=Math.round(10+50*s+10*s*s);    // 10 → 70
+    const b=Math.round(18+10*s-18*s*s);    // 18 → 10
+    return `rgb(${r},${g},${b})`;
   } else {
     const s=Math.sqrt(-t);
-    return `rgb(${Math.round(6+10*s+40*s*s)},${Math.round(10+20*s+30*s*s)},${Math.round(20+90*s+145*s*s)})`;
+    const r=Math.round(12+5*s-7*s*s);      // 12 → 10
+    const g=Math.round(10+50*s+30*s*s);     // 10 → 90
+    const b=Math.round(18+100*s+137*s*s);   // 18 → 255
+    return `rgb(${r},${g},${b})`;
   }
+}
+
+function femFmtSI(val) {
+  // Format a value with SI prefix for clean display
+  const av=Math.abs(val);
+  if(av===0) return '0';
+  if(av>=1) return val.toFixed(1);
+  if(av>=1e-3) return (val*1e3).toFixed(1)+'m';
+  if(av>=1e-6) return (val*1e6).toFixed(1)+'\u00b5';
+  if(av>=1e-9) return (val*1e9).toFixed(1)+'n';
+  return val.toExponential(1);
 }
 
 function drawFEMField(canvas, mesh, fd, cfg) {
@@ -1729,78 +1768,156 @@ function drawFEMField(canvas, mesh, fd, cfg) {
   const ctx=canvas.getContext('2d');
   ctx.setTransform(2,0,0,2,0,0);
   ctx.fillStyle='#060a14';ctx.fillRect(0,0,W,H);
-  const fs=chartFS(W,'axisLabel'), tfs=chartFS(W,'tickValue');
-  const pad={top:36,right:50,bottom:44,left:56};
+
+  // Fixed readable font sizes
+  const fs=13, tfs=11, sfs=10;
+  const pad={top:38,right:80,bottom:48,left:56};
   const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
   const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
   const toP=(r,z)=>[pad.left+(r+rMax)/(2*rMax)*pW, pad.top+(1-(z-zMin)/(zMax-zMin))*pH];
 
+  // Find max |ΔBz| for color normalization
   let mxAbs=0;
   for(const f of fd) mxAbs=Math.max(mxAbs,Math.abs(f.dBz));
   if(mxAbs<1e-18) mxAbs=1;
 
-  for(let i=0;i<mesh.elements.length;i++){
-    const el=mesh.elements[i];
-    const col=femDivColor(fd[i].dBz/mxAbs);
-    const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
-    ctx.fillStyle=col;
-    // Right side
-    ctx.beginPath();
-    let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
-    [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
-    [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
-    ctx.closePath();ctx.fill();
-    // Mirror left
-    ctx.beginPath();
-    [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
-    [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
-    [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
-    ctx.closePath();ctx.fill();
+  // Draw filled triangles (+ mirror) — skip in mesh-only mode
+  if(!cfg.meshOnly){
+    for(let i=0;i<mesh.elements.length;i++){
+      const el=mesh.elements[i];
+      const col=femDivColor(fd[i].dBz/mxAbs);
+      const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
+      ctx.fillStyle=col;
+      ctx.beginPath();
+      let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.fill();
+      ctx.beginPath();
+      [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.fill();
+    }
   }
 
-  // Bead outline
+  // Mesh wireframe overlay
+  if(cfg.showMesh){
+    // Brighter in mesh-only mode, subtle when overlaid on field
+    const meshAlpha=cfg.meshOnly?0.35:0.12;
+    // Color bead elements differently in mesh-only mode
+    for(let i=0;i<mesh.elements.length;i++){
+      const el=mesh.elements[i];
+      const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
+      if(cfg.meshOnly){
+        ctx.strokeStyle=el.inBead?'rgba(245,158,11,'+meshAlpha+')':'rgba(148,163,184,'+meshAlpha+')';
+        // Light fill for bead region
+        if(el.inBead){ctx.fillStyle='rgba(245,158,11,0.06)';} else {ctx.fillStyle='transparent';}
+      } else {
+        ctx.strokeStyle='rgba(148,163,184,'+meshAlpha+')';
+      }
+      ctx.lineWidth=0.5;ctx.setLineDash([]);
+      // Right half
+      ctx.beginPath();
+      let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.stroke();
+      if(cfg.meshOnly&&el.inBead)ctx.fill();
+      // Mirror
+      ctx.beginPath();
+      [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.stroke();
+      if(cfg.meshOnly&&el.inBead)ctx.fill();
+    }
+  }
+
+  // Plot border
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+
+  // Bead outline (circle at bead center)
   const[bcx,bcy]=toP(0,mesh.beadH);
   const brPx=mesh.beadR/(2*rMax)*pW;
-  ctx.strokeStyle='#f59e0b';ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(245,158,11,0.8)';ctx.lineWidth=1.5;ctx.setLineDash([]);
   ctx.beginPath();ctx.arc(bcx,bcy,brPx,0,Math.PI*2);ctx.stroke();
-  // Mirror
-  ctx.beginPath();ctx.arc(bcx,bcy,brPx,0,Math.PI*2);ctx.stroke();
+  // Bead label
+  ctx.fillStyle='rgba(245,158,11,0.85)';ctx.font=`${sfs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('bead',bcx+brPx+4,bcy-2);
 
   // Sensor rectangle
   const[sl,st]=toP(-mesh.sensHW,0),[sr,sb]=toP(mesh.sensHW,-mesh.sensT);
-  ctx.strokeStyle='#22d3ee';ctx.lineWidth=1.5;
+  ctx.strokeStyle='rgba(34,211,238,0.8)';ctx.lineWidth=1.5;
   ctx.strokeRect(sl,st,sr-sl,sb-st);
+  // Sensor label
+  ctx.fillStyle='rgba(34,211,238,0.8)';ctx.font=`${sfs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('sensor',sr+4,st+4);
 
-  // Axis labels
+  // Symmetry axis (dashed center line)
+  const[axX,axTop]=toP(0,zMax),[_,axBot]=toP(0,zMin);
+  ctx.strokeStyle='rgba(148,163,184,0.2)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+  ctx.beginPath();ctx.moveTo(axX,axTop);ctx.lineTo(axX,axBot);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X-axis label
   ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
   ctx.fillText('r (\u00b5m)',pad.left+pW/2,H-8);
+
+  // Y-axis label
   ctx.save();ctx.translate(14,pad.top+pH/2);ctx.rotate(-Math.PI/2);
   ctx.fillText('z (\u00b5m)',0,0);ctx.restore();
 
-  // Tick marks
-  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#64748b';ctx.textAlign='center';
-  const rTicks=[-rMax,-rMax/2,0,rMax/2,rMax];
-  for(const rv of rTicks){const[tx,ty]=toP(rv,zMin);ctx.fillText((rv*1e6).toFixed(0),tx,ty+tfs+4);}
+  // X ticks — nice round values
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+  const rUm=rMax*1e6;
+  const rStep=rUm>40?20:rUm>20?10:rUm>8?5:rUm>3?2:1;
+  for(let rv=-Math.floor(rUm/rStep)*rStep;rv<=rUm;rv+=rStep){
+    const rM=rv*1e-6;
+    if(Math.abs(rM)>rMax*1.01) continue;
+    const[tx,ty]=toP(rM,zMin);
+    ctx.fillText(rv.toString(),tx,ty+tfs+5);
+    ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx,ty+3);ctx.stroke();
+  }
+
+  // Z ticks — nice round values
   ctx.textAlign='right';
-  const zSpan=zMax-zMin, zStep=Math.pow(10,Math.floor(Math.log10(zSpan)))*0.5;
-  for(let zv=Math.ceil(zMin/zStep)*zStep;zv<=zMax;zv+=zStep){
-    const[tx,ty]=toP(-rMax,zv);ctx.fillText((zv*1e6).toFixed(0),tx-6,ty+tfs*0.35);
+  const zUmMin=zMin*1e6, zUmMax=zMax*1e6, zSpanUm=zUmMax-zUmMin;
+  const zStep=zSpanUm>80?20:zSpanUm>40?10:zSpanUm>16?5:zSpanUm>6?2:1;
+  for(let zv=Math.ceil(zUmMin/zStep)*zStep;zv<=zUmMax;zv+=zStep){
+    const zM=zv*1e-6;
+    const[tx,ty]=toP(-rMax,zM);
+    ctx.fillStyle='#94a3b8';ctx.fillText(zv.toString(),tx-5,ty+4);
+    ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left-3,ty);ctx.lineTo(pad.left,ty);ctx.stroke();
   }
 
   // Title
-  ctx.fillStyle='#e2e8f0';ctx.font=`bold ${chartFS(W,'title')}px "DM Sans"`;ctx.textAlign='center';
-  ctx.fillText('\u0394Bz Perturbation Field',pad.left+pW/2,22);
+  ctx.fillStyle='#e2e8f0';ctx.font=`600 ${fs+1}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('\u0394Bz Perturbation Field (axisymmetric)',pad.left+pW/2,pad.top-16);
 
-  // Color bar
-  const cbW=14,cbH=pH*0.6,cbX=W-pad.right+12,cbY=pad.top+(pH-cbH)/2;
+  // Color bar — vertical gradient with border
+  const cbW=14,cbH=pH*0.7,cbX=W-pad.right+16,cbY=pad.top+(pH-cbH)/2;
+  // Draw gradient
   for(let iy=0;iy<cbH;iy++){
     const t=1-2*iy/cbH;
     ctx.fillStyle=femDivColor(t);ctx.fillRect(cbX,cbY+iy,cbW,1.5);
   }
-  ctx.font=`${tfs-1}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='left';
-  ctx.fillText('+'+(mxAbs*1e6).toExponential(1)+' \u00b5T',cbX+cbW+4,cbY+tfs);
-  ctx.fillText('0',cbX+cbW+4,cbY+cbH/2+tfs*0.35);
-  ctx.fillText('\u2212'+(mxAbs*1e6).toExponential(1),cbX+cbW+4,cbY+cbH);
+  // Color bar border
+  ctx.strokeStyle='rgba(100,116,139,0.35)';ctx.lineWidth=1;
+  ctx.strokeRect(cbX,cbY,cbW,cbH);
+  // Center tick
+  ctx.strokeStyle='rgba(148,163,184,0.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cbX+cbW,cbY+cbH/2);ctx.lineTo(cbX+cbW+3,cbY+cbH/2);ctx.stroke();
+
+  // Color bar labels — use SI prefix for clean display
+  ctx.font=`${sfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+  const cbLabel=femFmtSI(mxAbs);
+  ctx.fillText('+'+cbLabel+'T',cbX+cbW+5,cbY+4);
+  ctx.fillText('0',cbX+cbW+5,cbY+cbH/2+4);
+  ctx.fillText('\u2212'+cbLabel+'T',cbX+cbW+5,cbY+cbH+4);
 }
 
 function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
@@ -1808,8 +1925,10 @@ function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
   const ctx=canvas.getContext('2d');
   ctx.setTransform(2,0,0,2,0,0);
   ctx.fillStyle='#0d1424';ctx.fillRect(0,0,W,H);
-  const fs=chartFS(W,'axisLabel'),tfs=chartFS(W,'tickValue');
-  const pad={top:24,right:20,bottom:36,left:60};
+
+  // Font sizes — use fixed readable sizes, not chartFS which is tuned for wide charts
+  const fs=13, tfs=11, lfs=10;
+  const pad={top:36,right:28,bottom:48,left:72};
   const pW=W-pad.left-pad.right,pH=H-pad.top-pad.bottom;
 
   // Extract ΔBz vs r along sensor surface (z ≈ 0)
@@ -1823,12 +1942,12 @@ function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
   sensorEls.sort((a,b)=>a.r-b.r);
 
   // Analytical curve
-  const nPts=100, rMaxPlot=mesh.domR*0.4;
+  const nPts=120, rMaxPlot=mesh.domR*0.4;
   const analyticalPts=[];
   for(let i=0;i<nPts;i++){
     const r_=(i+0.5)/nPts*rMaxPlot;
-    const h=mesh.beadH;
-    const dBz=(MU0/(4*Math.PI))*mom*(2*h*h-r_*r_)/Math.pow(r_*r_+h*h,2.5);
+    const hh=mesh.beadH;
+    const dBz=(MU0/(4*Math.PI))*mom*(2*hh*hh-r_*r_)/Math.pow(r_*r_+hh*hh,2.5);
     analyticalPts.push({r:r_,dBz});
   }
 
@@ -1836,67 +1955,199 @@ function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
   let yMin=0,yMax=0;
   for(const p of sensorEls){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
   for(const p of analyticalPts){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
-  const yPad=(yMax-yMin)*0.1||1e-6;yMin-=yPad;yMax+=yPad;
+  const yPad=(yMax-yMin)*0.12||1e-6;yMin-=yPad;yMax+=yPad;
+
+  // Smart Y-axis: find a common scale factor for clean tick labels
+  const yAbsMax=Math.max(Math.abs(yMin),Math.abs(yMax));
+  const yExp=yAbsMax>0?Math.floor(Math.log10(yAbsMax)):0;
+  const yScale=Math.pow(10,yExp);
 
   const toX=r=>pad.left+r/rMaxPlot*pW;
   const toY=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*pH;
 
-  // Grid
-  ctx.strokeStyle='rgba(30,41,59,0.4)';ctx.lineWidth=0.5;
-  for(let i=0;i<=4;i++){const y=pad.top+pH*i/4;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+pW,y);ctx.stroke();}
+  // Grid lines
+  ctx.strokeStyle='rgba(30,41,59,0.3)';ctx.lineWidth=0.5;
+  for(let i=0;i<=5;i++){const y=pad.top+pH*i/5;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+pW,y);ctx.stroke();}
+  for(let i=1;i<=3;i++){const x=pad.left+pW*i/4;ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+pH);ctx.stroke();}
 
-  // Analytical line
+  // Axes border
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+
+  // Analytical line (green, solid)
   ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([]);
   ctx.beginPath();
   analyticalPts.forEach((p,i)=>{const x=toX(p.r),y=toY(p.dBz);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
   ctx.stroke();
 
   // FEM points (scatter)
-  ctx.fillStyle='rgba(6,182,212,0.6)';
-  const step=Math.max(1,Math.floor(sensorEls.length/200));
+  ctx.fillStyle='rgba(6,182,212,0.75)';
+  const step=Math.max(1,Math.floor(sensorEls.length/250));
   for(let i=0;i<sensorEls.length;i+=step){
     const p=sensorEls[i];
     if(p.r>rMaxPlot) continue;
     const x=toX(p.r),y=toY(p.dBz);
-    ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();
   }
 
-  // Sensor half-width marker
+  // Sensor half-width dashed marker
   if(mesh.sensHW<rMaxPlot){
     const sx=toX(mesh.sensHW);
-    ctx.strokeStyle='rgba(167,139,250,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.strokeStyle='rgba(167,139,250,0.45)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.moveTo(sx,pad.top);ctx.lineTo(sx,pad.top+pH);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='#a78bfa';ctx.font=`${tfs-1}px "DM Sans"`;ctx.textAlign='center';
-    ctx.fillText('sensor edge',sx,pad.top-4);
+    ctx.fillStyle='rgba(167,139,250,0.7)';ctx.font=`${lfs}px "DM Sans"`;
+    ctx.textAlign='left';ctx.fillText('sensor edge',sx+4,pad.top+14);
   }
 
-  // Labels
+  // Title
+  ctx.fillStyle='#cbd5e1';ctx.font=`600 ${fs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('FEM vs Analytical \u0394Bz at Sensor Plane',pad.left,pad.top-14);
+
+  // Y-axis label with exponent
+  const supDigits='\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079';
+  const expStr=(yExp<0?'\u207b':'')+String(Math.abs(yExp)).split('').map(d=>supDigits[+d]).join('');
   ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
-  ctx.fillText('Radial distance r (\u00b5m)',pad.left+pW/2,H-4);
-  ctx.save();ctx.translate(12,pad.top+pH/2);ctx.rotate(-Math.PI/2);
-  ctx.fillText('\u0394Bz (T)',0,0);ctx.restore();
+  ctx.save();ctx.translate(14,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('\u0394Bz (\u00d710'+expStr+' T)',0,0);
+  ctx.restore();
 
   // Y ticks
-  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#64748b';ctx.textAlign='right';
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const v=yMin+(yMax-yMin)*i/5;
+    const vs=v/yScale;
+    const y=pad.top+pH*(1-i/5);
+    ctx.fillText(vs.toFixed(2),pad.left-6,y+4);
+    ctx.strokeStyle='rgba(100,116,139,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left-3,y);ctx.lineTo(pad.left,y);ctx.stroke();
+  }
+
+  // X-axis label
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('Radial distance r (\u00b5m)',pad.left+pW/2,H-6);
+
+  // X ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='center';
   for(let i=0;i<=4;i++){
-    const v=yMin+(yMax-yMin)*i/4;
-    const y=pad.top+pH*(1-i/4);
-    ctx.fillText(v.toExponential(1),pad.left-6,y+tfs*0.35);
+    const r_=rMaxPlot*i/4;
+    const x=toX(r_);
+    ctx.fillText((r_*1e6).toFixed(0),x,pad.top+pH+16);
+    ctx.strokeStyle='rgba(100,116,139,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,pad.top+pH);ctx.lineTo(x,pad.top+pH+3);ctx.stroke();
+  }
+
+  // Legend — top right corner with background
+  const lgW=160,lgH=42;
+  const lgX=pad.left+pW-lgW-4,lgY=pad.top+6;
+  ctx.fillStyle='rgba(13,20,36,0.88)';
+  ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+  ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(lgX,lgY,lgW,lgH,4);}else{ctx.rect(lgX,lgY,lgW,lgH);}
+  ctx.fill();ctx.stroke();
+  ctx.font=`${lfs+1}px "DM Sans"`;ctx.textAlign='left';
+  // Analytical legend entry
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(lgX+8,lgY+14);ctx.lineTo(lgX+28,lgY+14);ctx.stroke();
+  ctx.fillStyle='#cbd5e1';ctx.fillText('Analytical (dipole)',lgX+34,lgY+18);
+  // FEM legend entry
+  ctx.fillStyle='#06b6d4';ctx.beginPath();ctx.arc(lgX+18,lgY+32,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#cbd5e1';ctx.fillText('FEM (axisymmetric)',lgX+34,lgY+36);
+}
+
+// Convergence residual chart
+function drawFEMConvergence(canvas, residuals) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,W,H);
+  if(!residuals||residuals.length<2) return;
+  const fs=12,tfs=10;
+  const pad={top:28,right:16,bottom:36,left:52};
+  const pW=W-pad.left-pad.right,pH=H-pad.top-pad.bottom;
+  const n=residuals.length;
+  // Log scale Y
+  const logRes=residuals.map(r=>Math.log10(Math.max(r,1e-20)));
+  let yMin=Math.floor(Math.min(...logRes)),yMax=Math.ceil(Math.max(...logRes));
+  if(yMax-yMin<2){yMin=yMax-2;}
+  const toX=i=>pad.left+(i/(n-1))*pW;
+  const toY=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*pH;
+  // Grid
+  ctx.strokeStyle='rgba(30,41,59,0.3)';ctx.lineWidth=0.5;
+  for(let y=yMin;y<=yMax;y++){const py=toY(y);ctx.beginPath();ctx.moveTo(pad.left,py);ctx.lineTo(pad.left+pW,py);ctx.stroke();}
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+  // Line
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.setLineDash([]);ctx.beginPath();
+  logRes.forEach((v,i)=>{const x=toX(i),y=toY(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Tolerance line
+  const tolY=toY(-10);
+  if(tolY>pad.top&&tolY<pad.top+pH){
+    ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(pad.left,tolY);ctx.lineTo(pad.left+pW,tolY);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle='rgba(239,68,68,0.6)';ctx.font=`${tfs}px "DM Sans"`;
+    ctx.textAlign='left';ctx.fillText('tol=10\u207b\u00b9\u2070',pad.left+4,tolY-4);
+  }
+  // Labels
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('CG Iteration',pad.left+pW/2,H-6);
+  ctx.save();ctx.translate(12,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('log\u2081\u2080(residual)',0,0);ctx.restore();
+  // Y ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='right';
+  for(let y=yMin;y<=yMax;y++){ctx.fillText('10'+('\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079'[Math.abs(y%10)]||y),pad.left-5,toY(y)+4);}
+  // Actually write proper superscripts for Y labels
+  ctx.clearRect(0,0,pad.left-2,H);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,pad.left-2,H);
+  ctx.fillStyle='#94a3b8';ctx.font=`${tfs}px "JetBrains Mono"`;ctx.textAlign='right';
+  const supD='\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079';
+  for(let y=yMin;y<=yMax;y++){
+    const expS=(y<0?'\u207b':'')+String(Math.abs(y)).split('').map(d=>supD[+d]).join('');
+    ctx.fillText('10'+expS,pad.left-5,toY(y)+4);
   }
   // X ticks
   ctx.textAlign='center';
-  for(let i=0;i<=4;i++){
-    const r_=rMaxPlot*i/4;
-    ctx.fillText((r_*1e6).toFixed(0),toX(r_),pad.top+pH+tfs+4);
-  }
+  const xStep=Math.max(1,Math.round(n/5));
+  for(let i=0;i<=n-1;i+=xStep){ctx.fillText(i.toString(),toX(i),pad.top+pH+14);}
+  // Title
+  ctx.fillStyle='#cbd5e1';ctx.font=`600 ${fs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('PCG Solver Convergence',pad.left,pad.top-10);
+}
 
-  // Legend
-  ctx.font=`${tfs}px "DM Sans"`;ctx.textAlign='left';
-  ctx.fillStyle='#22c55e';ctx.fillRect(pad.left+10,pad.top+6,16,3);
-  ctx.fillStyle='#94a3b8';ctx.fillText('Analytical (dipole)',pad.left+30,pad.top+12);
-  ctx.fillStyle='#06b6d4';ctx.beginPath();ctx.arc(pad.left+17,pad.top+24,3,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#94a3b8';ctx.fillText('FEM (axisymmetric)',pad.left+30,pad.top+28);
+// Interactive field map: draws probe crosshair at given (r,z) coords
+function drawFEMFieldProbe(canvas, mesh, fd, probeR, probeZ) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  const pad={top:38,right:80,bottom:48,left:56};
+  const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+  const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+  const toP=(r,z)=>[pad.left+(r+rMax)/(2*rMax)*pW, pad.top+(1-(z-zMin)/(zMax-zMin))*pH];
+  const[px,py]=toP(probeR,probeZ);
+  // Draw crosshair
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=0.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(pad.left,py);ctx.lineTo(pad.left+pW,py);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(px,pad.top);ctx.lineTo(px,pad.top+pH);ctx.stroke();
+  ctx.setLineDash([]);
+  // Probe dot
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='var(--primary)';ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();
+}
+
+// Find element and ΔBz at given (r,z) coordinates in mesh
+function femProbeAt(mesh, fd, r, z) {
+  // Find closest element centroid
+  let best=-1, bestD=Infinity;
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    const dr=Math.abs(el.cr)-Math.abs(r), dz=el.cz-z;
+    const d=dr*dr+dz*dz;
+    if(d<bestD){bestD=d;best=i;}
+  }
+  if(best<0) return null;
+  const el=mesh.elements[best];
+  return {dBz:fd[best].dBz, Bz:fd[best].Bz, Br:fd[best].Br, inBead:el.inBead, muR:el.muR, r:el.cr, z:el.cz};
 }
 
 // ── FEM Page Component ──
@@ -1905,13 +2156,18 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
 
   const canvasRef = useRef(null);
   const compRef = useRef(null);
+  const convRef = useRef(null);
+  const tooltipRef = useRef(null);
   const [solving, setSolving] = useState(false);
+  const [solveProgress, setSolveProgress] = useState(0);
   const [result, setResult] = useState(null);
   const [meshRes, setMeshRes] = useState('medium');
   const [femBeadR, setFemBeadR] = useState(null);
   const [femBeadH, setFemBeadH] = useState(null);
   const [femB0, setFemB0] = useState(null);
   const [femMuR, setFemMuR] = useState(null);
+  const [fieldView, setFieldView] = useState('field'); // field | mesh | both
+  const [showExplain, setShowExplain] = useState(true);
 
   // Derive defaults from app state
   const isCustomMat = matIdx >= MATERIALS.length;
@@ -1929,24 +2185,111 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
   const meshNMap = {coarse:40, medium:70, fine:100, ultra:140};
   const nG = meshNMap[meshRes] || 70;
 
-  // Draw comparison chart after result state updates and DOM renders
+  // Redraw field when view mode changes
   useEffect(() => {
-    if (!result || !compRef.current) return;
-    const c = compRef.current;
-    const wrap = c.closest('.fem-comparison');
-    const W = (wrap ? wrap.clientWidth - 32 : 600);
-    c.width = W*2; c.height = 360; c.style.width = W+'px'; c.style.height = '180px';
-    drawFEMComparison(c, result.mesh, result.fd, result.mom, {});
+    if (!result || !canvasRef.current) return;
+    const c = canvasRef.current;
+    const W = c.parentElement.clientWidth, H = c.parentElement.clientHeight || 400;
+    c.width = W*2; c.height = H*2; c.style.width = W+'px'; c.style.height = H+'px';
+    drawFEMField(c, result.mesh, result.fd, {showMesh: fieldView!=='field', meshOnly: fieldView==='mesh'});
+  }, [result, fieldView]);
+
+  // Draw comparison + convergence charts
+  useEffect(() => {
+    if (!result) return;
+    if (compRef.current) {
+      const c = compRef.current;
+      const wrap = c.closest('.fem-comparison');
+      const W = (wrap ? wrap.clientWidth - 32 : 500);
+      const cH = Math.max(240, Math.round(W * 0.5));
+      c.width = W*2; c.height = cH*2; c.style.width = W+'px'; c.style.height = cH+'px';
+      drawFEMComparison(c, result.mesh, result.fd, result.mom, {});
+    }
+    if (convRef.current && result.sol.res.length > 1) {
+      const c = convRef.current;
+      const wrap = c.closest('.fem-convergence');
+      const W = (wrap ? wrap.clientWidth - 32 : 500);
+      const cH = Math.max(200, Math.round(W * 0.4));
+      c.width = W*2; c.height = cH*2; c.style.width = W+'px'; c.style.height = cH+'px';
+      drawFEMConvergence(c, result.sol.res);
+    }
   }, [result]);
+
+  // Interactive mouse hover on field canvas
+  useEffect(() => {
+    if (!result || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const mesh = result.mesh, fd = result.fd;
+    const pad={top:38,right:80,bottom:48,left:56};
+
+    function onMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const W = rect.width, H = rect.height;
+      const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+      // Convert pixel to (r, z)
+      const rFrac = (mx - pad.left) / pW;
+      const zFrac = 1 - (my - pad.top) / pH;
+      if(rFrac < 0 || rFrac > 1 || zFrac < 0 || zFrac > 1) {
+        if(tooltipRef.current) tooltipRef.current.classList.remove('vis');
+        return;
+      }
+      const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+      const probeR = (rFrac * 2 - 1) * rMax; // -rMax to +rMax
+      const probeZ = zMin + zFrac * (zMax - zMin);
+      const info = femProbeAt(mesh, fd, probeR, probeZ);
+      if(!info || !tooltipRef.current) return;
+      const tt = tooltipRef.current;
+      tt.classList.add('vis');
+      // Position tooltip
+      const ttX = Math.min(mx + 16, W - 200);
+      const ttY = Math.max(my - 70, 4);
+      tt.style.left = ttX + 'px';
+      tt.style.top = ttY + 'px';
+      const dBzVal = info.dBz;
+      const cls = dBzVal > 0 ? 'pos' : dBzVal < 0 ? 'neg' : '';
+      tt.innerHTML = '<div class="tt-label">Position</div>'
+        + '<div>r = <span class="tt-val">' + (Math.abs(probeR)*1e6).toFixed(1) + ' \u00b5m</span>'
+        + '  z = <span class="tt-val">' + (probeZ*1e6).toFixed(1) + ' \u00b5m</span></div>'
+        + '<div class="tt-label" style="margin-top:4px">\u0394Bz</div>'
+        + '<div class="tt-val ' + cls + '">' + femFmtSI(dBzVal) + 'T</div>'
+        + (info.inBead ? '<div style="color:#f59e0b;margin-top:2px">Inside bead (\u03bc\u1d63=' + info.muR.toFixed(0) + ')</div>' : '')
+        + '<div class="tt-label" style="margin-top:2px">|B| = <span class="tt-val">' + femFmtSI(Math.sqrt(info.Br*info.Br+info.Bz*info.Bz)) + 'T</span></div>';
+
+      // Redraw field + crosshair overlay
+      const c = canvas;
+      const cW = c.parentElement.clientWidth, cH = c.parentElement.clientHeight || 400;
+      c.width = cW*2; c.height = cH*2; c.style.width = cW+'px'; c.style.height = cH+'px';
+      drawFEMField(c, mesh, fd, {showMesh: fieldView==='mesh'||fieldView==='both'});
+      drawFEMFieldProbe(c, mesh, fd, probeR, probeZ);
+    }
+
+    function onLeave() {
+      if(tooltipRef.current) tooltipRef.current.classList.remove('vis');
+      // Redraw without crosshair
+      const c = canvas;
+      const cW = c.parentElement.clientWidth, cH = c.parentElement.clientHeight || 400;
+      c.width = cW*2; c.height = cH*2; c.style.width = cW+'px'; c.style.height = cH+'px';
+      drawFEMField(c, mesh, fd, {showMesh: fieldView==='mesh'||fieldView==='both'});
+    }
+
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseleave', onLeave);
+    return () => { canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('mouseleave', onLeave); };
+  }, [result, fieldView]);
 
   function doSolve() {
     setSolving(true);
+    setSolveProgress(0);
     setTimeout(() => {
       try {
         const beadR_m = bR < 1e-3 ? bR : bR * 1e-6;
         const beadH_m = bH < 1e-3 ? bH : bH * 1e-6;
+        setSolveProgress(10);
         const mesh = femCreateMesh(beadR_m, beadH_m, sensHW, sensT, bMuR, nG);
+        setSolveProgress(30);
         const sol = femSolve(mesh, b0, 1e-10, 2000);
+        setSolveProgress(70);
         const fd = femField(mesh, sol.phi, b0);
         const femAvg = femSensorAvg(mesh, fd, sensHW);
         const mom = beadMoment(beadR_m, bMuR, b0);
@@ -1954,20 +2297,12 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
         const femDVH = Math.abs(mProps.RH * mProps.sigma * femAvg * vBias) * 1000;
         const anaDVH = Math.abs(mProps.RH * mProps.sigma * anaAvg * vBias) * 1000;
         const errPct = anaDVH > 0 ? Math.abs(femDVH - anaDVH) / anaDVH * 100 : 0;
+        setSolveProgress(100);
 
         setResult({mesh, fd, sol, femAvg, anaAvg, femDVH, anaDVH, errPct, mom,
           nNodes: sol.N, nElems: mesh.elements.length, solveMs: sol.solveTime,
-          cgIter: sol.iter, finalRes: sol.res[sol.res.length-1]||0});
-
-        // Draw field map (canvas always in DOM)
-        requestAnimationFrame(() => {
-          if (canvasRef.current) {
-            const c = canvasRef.current;
-            const W = c.parentElement.clientWidth, H = c.parentElement.clientHeight || 400;
-            c.width = W*2; c.height = H*2; c.style.width = W+'px'; c.style.height = H+'px';
-            drawFEMField(c, mesh, fd, {});
-          }
-        });
+          cgIter: sol.iter, finalRes: sol.res[sol.res.length-1]||0,
+          beadR_m: beadR_m, beadH_m: beadH_m, b0_T: b0, bMuR_val: bMuR});
       } catch(e) { console.error('FEM solve error:', e); }
       setSolving(false);
     }, 50);
@@ -1976,29 +2311,45 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
   const bR_um = (bR < 1e-3 ? bR*1e6 : bR).toFixed(2);
   const bH_um = (bH < 1e-3 ? bH*1e6 : bH).toFixed(1);
 
+  // Error interpretation
+  const errInterpret = result ? (
+    result.errPct < 3 ? 'Excellent agreement \u2014 dipole approximation is highly accurate for these parameters.'
+    : result.errPct < 8 ? 'Good agreement. Minor deviation from dipole model due to finite bead size and sensor proximity.'
+    : result.errPct < 15 ? 'Moderate deviation. The bead is close enough to the sensor that higher-order multipole terms matter. The dipole model underestimates near-field contributions.'
+    : 'Significant deviation. The bead-sensor distance is comparable to the bead radius (h/R=' + (result.beadH_m/result.beadR_m).toFixed(1) + '), violating the point-dipole assumption. FEM captures the true distributed magnetization.'
+  ) : '';
+
   return h('div', {className:'fem-wrap'},
-    // Controls
+    // ─── Controls sidebar ───
     h('div', {className:'fem-controls'},
       h('div', {className:'d-card'},
-        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--bead)'}}), ' Bead'),
-        h(Slider, {label:'Radius', value:+bR_um, min:0.1, max:10, step:0.05, unit:' \u00b5m',
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--bead)'}}), ' Bead Parameters'),
+        h(Slider, {label:'Radius (R)', value:+bR_um, min:0.1, max:10, step:0.05, unit:' \u00b5m',
           onChange:v=>setFemBeadR(v*1e-6)}),
-        h(Slider, {label:'\u03bc\u1d63', value:bMuR, min:2, max:100, step:1, unit:'',
+        h(Slider, {label:'Rel. permeability \u03bc\u1d63', value:bMuR, min:2, max:100, step:1, unit:'',
           onChange:v=>setFemMuR(v)}),
-        h(Slider, {label:'h above sensor', value:+bH_um, min:0.5, max:30, step:0.5, unit:' \u00b5m',
+        h(Slider, {label:'Height above sensor (h)', value:+bH_um, min:0.5, max:30, step:0.5, unit:' \u00b5m',
           onChange:v=>setFemBeadH(v)}),
+        showExplain && h('div',{className:'fem-explain'},
+          'The bead acquires a magnetic moment ', h('span',{className:'eq-inline'},'m = V\u00b7\u03c7\u2091\u1da0\u1da0\u00b7H\u2080'),
+          ' in the applied field. ',
+          h('b',null,'h/R ratio: '), ((bH < 1e-3 ? bH*1e6 : bH) / (bR < 1e-3 ? bR*1e6 : bR)).toFixed(1),
+          ' \u2014 ', ((bH < 1e-3 ? bH*1e6 : bH) / (bR < 1e-3 ? bR*1e6 : bR)) > 3 ? 'dipole approx. valid' : 'near-field effects significant',
+        ),
       ),
       h('div', {className:'d-card'},
-        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), ' Field & Sensor'),
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), ' Applied Field'),
         h(Slider, {label:'B\u2080', value:femB0!==null?femB0:B0, min:10, max:500, step:5, unit:' mT',
           onChange:v=>setFemB0(v)}),
-        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'4px'}},
-          'Sensor: '+(sensor.size*1e6).toFixed(0)+'\u00d7'+(sensor.size*1e6).toFixed(0)+' \u00b5m\u00b2, t='+(sensor.t*1e6).toFixed(1)+' \u00b5m'),
-        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'2px'}},
-          'Material: '+(isCustomMat?'Custom':mat.name)),
+        h('div',{className:'fem-mesh-info',style:{marginTop:'6px'}},
+          h('span',{className:'mi-label'},'Sensor:'),h('span',{className:'mi-val'},(sensor.size*1e6).toFixed(0)+'\u00d7'+(sensor.size*1e6).toFixed(0)+' \u00b5m\u00b2'),
+          h('span',{className:'mi-label'},'Thickness:'),h('span',{className:'mi-val'},(sensor.t*1e6).toFixed(1)+' \u00b5m'),
+          h('span',{className:'mi-label'},'Material:'),h('span',{className:'mi-val'},isCustomMat?'Custom':mat.name),
+          h('span',{className:'mi-label'},'R\u2095:'),h('span',{className:'mi-val'},mProps.RH.toExponential(2)+' m\u00b3/C'),
+        ),
       ),
       h('div', {className:'d-card'},
-        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), ' Mesh'),
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), ' Mesh Resolution'),
         h('div', {className:'mode-tabs'},
           ['coarse','medium','fine','ultra'].map(r =>
             h('button', {key:r, className:'mode-tab'+(meshRes===r?' active':''),
@@ -2006,33 +2357,55 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
               r.charAt(0).toUpperCase()+r.slice(1))
           )
         ),
-        h('div',{style:{fontSize:'var(--fs-xs)',color:'var(--muted)',marginTop:'6px'}},
-          nG+'\u00d7'+nG+' grid \u2192 ~'+((nG)*(nG)*2).toLocaleString()+' elements'),
+        h('div',{className:'fem-mesh-info'},
+          h('span',{className:'mi-label'},'Grid:'),h('span',{className:'mi-val'},nG+'\u00d7'+nG),
+          h('span',{className:'mi-label'},'Elements:'),h('span',{className:'mi-val'},'~'+((nG)*(nG)*2).toLocaleString()),
+          h('span',{className:'mi-label'},'Refinement:'),h('span',{className:'mi-val'},'Adaptive (bead+sensor)'),
+        ),
+        showExplain && h('div',{className:'fem-explain',style:{marginTop:'8px'}},
+          'Structured mesh with Lorentzian density peaks near bead boundary (w=12) and sensor surface (w=8). Each quad cell splits into 2 triangles.',
+        ),
       ),
       h('button', {className:'fem-solve-btn', onClick:doSolve, disabled:solving},
         solving ? 'Solving\u2026' : '\u25b6 Solve FEM'),
+      solving && h('div',{className:'fem-progress'},
+        h('div',{className:'fem-progress-bar',style:{width:solveProgress+'%'}})),
       result && h('div', {className:'fem-status'},
-        h('div',null,'Nodes: '+result.nNodes.toLocaleString()+' | Elements: '+result.nElems.toLocaleString()),
-        h('div',null,'CG iterations: '+result.cgIter+' | Time: '+result.solveMs.toFixed(0)+' ms'),
-        h('div',null,'Final residual: '+result.finalRes.toExponential(2)),
+        h('div',null,result.nNodes.toLocaleString()+' nodes \u00b7 '+result.nElems.toLocaleString()+' elements'),
+        h('div',null,result.cgIter+' CG iters \u00b7 '+result.solveMs.toFixed(0)+' ms'),
+        h('div',null,'Residual: '+result.finalRes.toExponential(2)),
       ),
-      h('div', {className:'d-card', style:{marginTop:'auto',fontSize:'var(--fs-xs)',color:'var(--muted)',lineHeight:'1.6'}},
-        h('div',{style:{fontWeight:600,color:'var(--text)',marginBottom:'4px'}},'About this solver'),
-        '2D axisymmetric FEM for magnetostatic scalar potential. ',
-        'Linear triangular elements with adaptive mesh refinement near bead and sensor surfaces. ',
-        'Preconditioned conjugate gradient (diagonal) solver. ',
-        'Compares volume-averaged \u0394Bz at sensor vs. analytical point-dipole model.',
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px'}},
+        h('button',{
+          style:{fontSize:'var(--fs-xs)',color:showExplain?'var(--primary)':'var(--muted)',background:'none',border:'1px solid '+(showExplain?'var(--primary-dim)':'var(--subtle)'),borderRadius:'4px',padding:'4px 10px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"},
+          onClick:()=>setShowExplain(!showExplain)},
+          showExplain ? '\u25bc Hide Explanations' : '\u25b6 Show Explanations'),
       ),
     ),
 
-    // Field visualization
+    // ─── Field visualization (spans 2 columns) ───
     h('div', {className:'fem-canvas-wrap'},
       h('canvas', {ref:canvasRef}),
-      !result && h('div',{style:{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--muted)',fontSize:'var(--fs-md)'}},
-        'Configure parameters and click Solve FEM'),
+      h('div', {ref:tooltipRef, className:'fem-tooltip'}),
+      // View mode tabs overlay
+      h('div',{style:{position:'absolute',top:'8px',left:'8px',display:'flex',gap:'2px',zIndex:5}},
+        h('div',{className:'fem-view-tabs'},
+          ['field','mesh','both'].map(v=>
+            h('button',{key:v,className:'fem-view-tab'+(fieldView===v?' active':''),
+              onClick:()=>setFieldView(v)},
+              v==='field'?'\u0394Bz Field':v==='mesh'?'Mesh':'\u0394Bz + Mesh')
+          ),
+        ),
+      ),
+      !result && h('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'var(--muted)',fontSize:'var(--fs-md)',gap:'12px'}},
+        h('div',{style:{fontSize:'var(--fs-xl)',opacity:0.3}},'\ud83d\udd2c'),
+        'Configure parameters and click Solve FEM',
+        h('div',{style:{fontSize:'var(--fs-xs)',maxWidth:'340px',textAlign:'center',lineHeight:'1.5'}},
+          'The solver builds a 2D axisymmetric triangular mesh, assembles the magnetostatic stiffness matrix, and solves \u2207\u00b7(\u03bc\u1d63\u2207\u03c6) = 0 with preconditioned conjugate gradient.'),
+      ),
     ),
 
-    // Comparison panel
+    // ─── Comparison chart ───
     h('div', {className:'fem-comparison'},
       result ? h(React.Fragment, null,
         h('div', {className:'fem-results'},
@@ -2050,13 +2423,36 @@ function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
               result.errPct.toFixed(1)+'%'),
           ),
         ),
-        h('div',{style:{marginTop:'12px',height:'180px'}}, h('canvas', {ref:compRef, style:{width:'100%',height:'100%'}})),
-        h('div', {className:'fem-legend'},
-          h('span',{className:'swatch',style:{background:'#22c55e'}}), 'Analytical dipole',
-          h('span',{className:'swatch',style:{background:'#06b6d4'}}), 'FEM solution',
+        showExplain && h('div',{className:'fem-explain',style:{marginBottom:'8px'}},
+          h('b',null,'Interpretation: '), errInterpret,
+          ' The Clausius\u2013Mossotti effective susceptibility is ',
+          h('span',{className:'eq-inline'},'\u03c7\u2091\u1da0\u1da0 = 3(\u03bc\u1d63\u22121)/(\u03bc\u1d63+2) = '+(3*(bMuR-1)/(bMuR+2)).toFixed(2)),
+          '.',
         ),
-      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'20px'}},
-        'Solve to see FEM vs. analytical comparison and error quantification'),
+        h('canvas', {ref:compRef, style:{width:'100%'}}),
+      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'20px',lineHeight:'1.7'}},
+        h('div',{style:{fontSize:'var(--fs-md)',marginBottom:'8px'}},'FEM vs. Analytical Comparison'),
+        'After solving, this panel shows the radial profile of \u0394Bz at the sensor plane. ',
+        'The green curve is the point-dipole analytical model; cyan dots are FEM element values.',
+      ),
+    ),
+
+    // ─── Convergence chart ───
+    h('div', {className:'fem-convergence'},
+      result && result.sol.res.length > 1 ? h(React.Fragment, null,
+        h('canvas', {ref:convRef, style:{width:'100%'}}),
+        showExplain && h('div',{className:'fem-explain',style:{marginTop:'8px'}},
+          'The preconditioned conjugate gradient (PCG) solver minimizes ',
+          h('span',{className:'eq-inline'},'K\u03c6 = f'),
+          ' with diagonal preconditioning. ',
+          'Converged in ', h('b',null,result.cgIter), ' iterations to residual ',
+          h('span',{className:'eq-inline'},result.finalRes.toExponential(2)),
+          '. Penalty method (10\u2078\u00b7max(K\u1d62\u1d62)) enforces Dirichlet BCs on domain boundaries.',
+        ),
+      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'16px',lineHeight:'1.7'}},
+        h('div',{style:{fontSize:'var(--fs-md)',marginBottom:'6px'}},'Solver Convergence'),
+        'Shows log\u2081\u2080(residual) vs. CG iteration after solving.',
+      ),
     ),
   );
 }
