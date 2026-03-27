@@ -65,9 +65,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* ── Sliders & Inputs ── */
 .slider-row{margin-bottom:5px}
-.slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px}
-.slider-name{font-size:var(--fs-sm);color:#cbd5e1}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1px}
+.slider-name{font-size:var(--fs-sm);color:#cbd5e1;display:flex;align-items:center;gap:4px}
 .slider-val{font-family:'JetBrains Mono',monospace;font-size:var(--fs-sm);color:var(--primary)}
+.slider-hint{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:rgba(100,116,139,0.2);font-size:9px;color:#64748b;cursor:help;flex-shrink:0;transition:all 0.15s}
+.slider-row:hover .slider-hint{background:rgba(6,182,212,0.15);color:var(--primary)}
+.slider-desc{display:none;font-size:var(--fs-xs);color:#94a3b8;line-height:1.45;padding:5px 8px;background:rgba(6,182,212,0.04);border:1px solid rgba(100,116,139,0.12);border-radius:5px;margin-bottom:3px}
+.slider-row:hover .slider-desc{display:block}
 input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(--subtle);outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid var(--bg)}
 input[type=range]:disabled{opacity:0.4}
@@ -465,14 +469,15 @@ const SENSOR_PRESETS = [
 // ══════════════════════════════════════════════════════════════════════════════
 // UI COMPONENTS
 // ══════════════════════════════════════════════════════════════════════════════
-function Slider({label, value, min, max, step, unit, onChange, disabled}) {
+function Slider({label, value, min, max, step, unit, onChange, disabled, desc}) {
   const s = step || 1;
   const fmt = s < 0.01 ? value.toFixed(3) : s < 0.1 ? value.toFixed(2) : s < 1 ? value.toFixed(1) : Math.round(value);
   return h('div',{className:'slider-row'},
     h('div',{className:'slider-header'},
-      h('span',{className:'slider-name'},label),
+      h('span',{className:'slider-name'},label,desc&&h('span',{className:'slider-hint'},'?')),
       h('span',{className:'slider-val'},fmt+(unit||''))
     ),
+    desc&&h('div',{className:'slider-desc'},desc),
     h('input',{type:'range',min,max,step:s,value,disabled:!!disabled,
       onChange:e=>onChange(+e.target.value)})
   );
@@ -2554,7 +2559,7 @@ function App() {
     for (let i = 0; i < nBeads; i++) {
       const startX = -visLen/2 - r_bead*2 - i * beadSpacing;
       let y = heightMode === 'fixed' ? fixedHeight * 1e-6 : (minHeight + Math.random() * (maxHeight - minHeight)) * 1e-6;
-      y = Math.max(y, r_bead + 0.1e-6);
+      y = Math.max(y, r_bead * 2 + 0.2e-6); // bead center must be at least one diameter above sensor
       const z = (Math.random() - 0.5) * chW_m * 0.4;
       sim.beads.push({id:i+1, x:startX, y, z, active:true, passed:false, detected:false, peakDVH:0, currentDVH:0, height_um:y*1e6});
     }
@@ -2849,7 +2854,8 @@ function App() {
                   h(NumField, {label:'Thickness t', value:+(customSensor.t*1e6).toFixed(2), unit:'\u00b5m', disabled:simState==='running',
                     onChange:v=>setCustomSensor({...customSensor, t:v*1e-6})}),
                 ),
-            h(Slider, {label:'Bias Voltage', value:vBias, min:1, max:10, step:0.5, unit:' V', onChange:setVBias, disabled:simState==='running'}),
+            h(Slider, {label:'Bias Voltage', value:vBias, min:1, max:10, step:0.5, unit:' V', onChange:setVBias, disabled:simState==='running',
+              desc:'Voltage applied across the Hall sensor. Higher bias = larger Hall voltage signal, but also more noise and power dissipation.'}),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'Area: '), (sensor.size*1e6).toFixed(1), '\u00d7', (sensor.size*1e6).toFixed(1), ' \u00b5m\u00b2'),
             ),
@@ -2858,8 +2864,10 @@ function App() {
           // Channel
           h('div', {className:'group'},
             h('div', {className:'group-title ch'}, 'Microfluidic Channel'),
-            h(Slider, {label:'Channel height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running'}),
-            h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running'}),
+            h(Slider, {label:'Channel height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running',
+              desc:'Height of the microfluidic channel (the enclosed tube beads flow through). Determines the Poiseuille flow profile and how close beads can pass to the sensor. Typical PDMS channels: 20\u2013100 \u00b5m.'}),
+            h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running',
+              desc:'Mean flow velocity of the fluid carrying the beads. Controls how fast beads pass over the sensor and how long the detection window lasts. Higher velocity = shorter pulses.'}),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'Q: '), Q_uLmin < 0.001 ? Q_uLmin.toExponential(2) : Q_uLmin.toFixed(4), ' \u00b5L/min'),
             ),
@@ -2883,7 +2891,8 @@ function App() {
                   h(NumField, {label:'\u03bc\u1d63', value:customBead.mu_r, unit:'', disabled:simState==='running',
                     onChange:v=>setCustomBead({...customBead, mu_r:v})}),
                 ),
-            h(Slider, {label:'Batch size N', value:nBeads, min:1, max:50, step:1, unit:'', onChange:setNBeads, disabled:simState==='running'}),
+            h(Slider, {label:'Batch size N', value:nBeads, min:1, max:50, step:1, unit:'', onChange:setNBeads, disabled:simState==='running',
+              desc:'Number of beads to simulate in one batch. More beads give better statistics (mean, CV) but take longer to run.'}),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'\u03c7\u2091\u1da0\u1da0 = '), (3*(bead.mu_r-1)/(bead.mu_r+2)).toFixed(3)),
               h('div', null, h('b',null,'m = '), fmtSci(mom), ' A\u00b7m\u00b2'),
@@ -2898,23 +2907,28 @@ function App() {
               h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random'),
             ),
             heightMode === 'fixed'
-              ? h(Slider, {label:'h (above sensor)', value:fixedHeight, min:0.5, max:30, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running'})
+              ? h(Slider, {label:'h (above sensor)', value:fixedHeight, min:Math.max(0.5, Math.ceil(bead.d*1e6*2)/1), max:50, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running',
+                  desc:'Distance from bead center to sensor surface. Must exceed bead diameter so the bead does not physically overlap the sensor. Closer = stronger stray field but the dipole model loses accuracy below ~2\u00d7 bead radius.'})
               : h('div', null,
-                  h(Slider, {label:'Min h', value:minHeight, min:0.5, max:20, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running'}),
-                  h(Slider, {label:'Max h', value:maxHeight, min:1, max:40, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running'}),
+                  h(Slider, {label:'Min h', value:minHeight, min:Math.max(0.5, Math.ceil(bead.d*1e6*2)/1), max:30, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running',
+                    desc:'Minimum bead height in the random distribution. Clamped to at least one bead diameter above the sensor.'}),
+                  h(Slider, {label:'Max h', value:maxHeight, min:1, max:50, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running',
+                    desc:'Maximum bead height. Beads higher in the channel produce weaker signals but travel faster in Poiseuille flow.'}),
                 ),
           ),
 
           // CHMA
           h('div', {className:'group'},
             h('div', {className:'group-title'}, 'Halbach Array'),
-            h(Slider, {label:'B\u2080 at sensor', value:B0, min:10, max:500, step:10, unit:' mT', onChange:setB0, disabled:simState==='running'}),
+            h(Slider, {label:'B\u2080 at sensor', value:B0, min:10, max:500, step:10, unit:' mT', onChange:setB0, disabled:simState==='running',
+              desc:'External magnetic field from the Halbach array that magnetizes the beads. Stronger field = larger bead magnetic moment = stronger Hall signal. Typical NdFeB arrays: 100\u2013300 mT.'}),
           ),
 
           // Detection threshold
           h('div', {className:'group'},
             h('div', {className:'group-title det'}, 'Detection'),
-            h(Slider, {label:'\u0394V\u2095 threshold', value:threshold, min:0.1, max:100, step:0.1, unit:' mV', onChange:setThreshold}),
+            h(Slider, {label:'\u0394V\u2095 threshold', value:threshold, min:0.1, max:100, step:0.1, unit:' mV', onChange:setThreshold,
+              desc:'Minimum Hall voltage signal to count a bead as "detected." Set above the noise floor but below the expected peak signal. Shown as the red dashed line on the trace.'}),
           ),
 
           // Batch results
