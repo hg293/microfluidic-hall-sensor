@@ -1,3 +1,5 @@
 {
-  "outputDirectory": "public"
+  "buildCommand": "node build.mjs",
+  "outputDirectory": "public",
+  "installCommand": "npm install"
 }

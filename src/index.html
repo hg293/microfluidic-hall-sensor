@@ -1,0 +1,2972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>µFlow — 3D Microfluidic Hall Sensor Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060a14;--card:#0d1424;--card-border:#1a2540;
+  --primary:#06b6d4;--primary-dim:#0e7490;
+  --signal:#22c55e;--bead:#f59e0b;
+  --sensor:#a78bfa;--sensor-bright:#c4b5fd;
+  --text:#e2e8f0;--muted:#64748b;--subtle:#1e293b;
+  --danger:#ef4444;--gold:#f59e0b;
+  /* Responsive font scale: 1vw ≈ 14px on 1400px screen */
+  --fs-xs:clamp(11px, 0.85vw, 15px);
+  --fs-sm:clamp(12px, 0.95vw, 17px);
+  --fs-md:clamp(13px, 1.05vw, 19px);
+  --fs-lg:clamp(15px, 1.2vw, 22px);
+  --fs-xl:clamp(18px, 1.5vw, 28px);
+  --fs-2xl:clamp(22px, 1.8vw, 34px);
+  --fs-3xl:clamp(28px, 2.2vw, 42px);
+  --fs-hero:clamp(52px, 5vw, 80px);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+#root{height:100%}
+
+/* ── Layout ── */
+.app{display:grid;grid-template-columns:300px 1fr;grid-template-rows:64px 1fr 200px;height:100%}
+.app.designer-mode{grid-template-columns:1fr;grid-template-rows:64px 1fr;overflow:hidden}
+
+/* ── Header ── */
+.header{grid-column:1/-1;display:flex;align-items:center;padding:0 24px;gap:20px;background:linear-gradient(180deg,rgba(13,20,36,0.97),rgba(10,16,30,0.95));border-bottom:1px solid var(--card-border);backdrop-filter:blur(8px);z-index:10}
+.header-brand{display:flex;align-items:baseline;gap:8px;min-width:0;overflow:hidden}
+.header-brand h1{font-size:var(--fs-2xl);font-weight:700;letter-spacing:0.3px;white-space:nowrap}
+.header-brand h1 .brand{color:var(--primary)}
+.header-brand .sub{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
+.nav-tabs{display:flex;gap:2px;background:var(--subtle);padding:3px;border-radius:8px;margin-left:24px}
+.nav-tab{font-size:var(--fs-sm);padding:7px 20px;border-radius:6px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.2s;white-space:nowrap}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{background:var(--primary);color:var(--bg);font-weight:600}
+.header-metrics{display:flex;gap:16px;margin-left:auto}
+.metric{text-align:right}
+.metric-label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.8px}
+.metric-value{font-family:'JetBrains Mono',monospace;font-size:var(--fs-md);font-weight:500;color:var(--primary)}
+.metric-value.g{color:var(--signal)}.metric-value.b{color:var(--bead)}.metric-value.r{color:var(--danger)}
+
+/* ── Sidebar ── */
+.sidebar{overflow-y:auto;padding:12px;border-right:1px solid var(--card-border);background:rgba(10,16,30,0.97);z-index:5;grid-row:2/4}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:2px}
+.group{margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(30,41,59,0.4)}
+.group:last-child{border-bottom:none}
+.group-title{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.group-title::before{content:'';width:3px;height:12px;border-radius:2px;background:var(--primary)}
+.group-title.mat::before{background:var(--sensor)}
+.group-title.bead::before{background:var(--bead)}
+.group-title.ch::before{background:#3b82f6}
+.group-title.det::before{background:var(--danger)}
+
+/* ── Sliders & Inputs ── */
+.slider-row{margin-bottom:5px}
+.slider-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px}
+.slider-name{font-size:var(--fs-sm);color:#cbd5e1}
+.slider-val{font-family:'JetBrains Mono',monospace;font-size:var(--fs-sm);color:var(--primary)}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:var(--subtle);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid var(--bg)}
+input[type=range]:disabled{opacity:0.4}
+.num-input{width:76px;background:rgba(30,41,59,0.6);border:1px solid var(--card-border);color:var(--primary);font-family:'JetBrains Mono',monospace;font-size:var(--fs-sm);padding:4px 6px;border-radius:5px;text-align:right;outline:none;transition:border-color 0.15s}
+.num-input:focus{border-color:var(--primary)}
+.num-input:disabled{opacity:0.4}
+.input-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.input-row label{font-size:var(--fs-sm);color:#cbd5e1}
+.input-row .unit{font-size:var(--fs-xs);color:var(--muted);margin-left:4px}
+
+/* ── Preset pills ── */
+.preset-row{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px}
+.preset-btn{font-size:var(--fs-xs);padding:4px 10px;border-radius:8px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.preset-btn:hover{border-color:var(--primary);color:var(--primary)}
+.preset-btn.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.preset-btn:disabled{opacity:0.4;cursor:default}
+
+/* ── Mode toggle ── */
+.mode-tabs{display:flex;gap:2px;margin-bottom:6px}
+.mode-tab{flex:1;text-align:center;font-size:var(--fs-xs);padding:5px;border-radius:4px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif}
+.mode-tab:disabled{opacity:0.4;cursor:default}
+.mode-tab.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+
+/* ── Info text ── */
+.sim-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5;margin-top:2px}
+.sim-info b{color:#94a3b8;font-weight:500}
+.note{font-size:var(--fs-xs);color:#94a3b8;line-height:1.4;margin-top:3px;font-style:italic}
+.eq{font-family:'JetBrains Mono',monospace;font-size:var(--fs-sm);color:#cbd5e1;padding:6px 10px;background:rgba(6,182,212,0.04);border-radius:4px;border-left:2px solid var(--primary-dim);margin:4px 0}
+
+/* ── Results ── */
+.results-box{background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.15);border-radius:6px;padding:8px;margin-top:4px}
+.results-box .rtitle{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:4px}
+.results-box .row{display:flex;justify-content:space-between;font-size:var(--fs-sm);line-height:1.6}
+.results-box .row .lbl{color:var(--muted)}
+.results-box .row .val{font-family:'JetBrains Mono',monospace;color:var(--text)}
+.results-box .row .val.good{color:var(--signal)}
+.results-box .row .val.warn{color:var(--bead)}
+
+/* ── Status badges ── */
+.status-badge{display:inline-block;font-size:var(--fs-xs);padding:3px 10px;border-radius:10px;font-weight:600;letter-spacing:0.5px}
+.status-badge.idle{background:var(--subtle);color:var(--muted)}
+.status-badge.running{background:rgba(5,150,105,0.2);color:#34d399;animation:pulse 1.5s infinite}
+.status-badge.done{background:rgba(6,182,212,0.15);color:var(--primary)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+
+/* ── Pulse table ── */
+.pulse-table{width:100%;margin-top:6px;font-size:var(--fs-xs);border-collapse:collapse}
+.pulse-table th{color:var(--muted);text-align:left;font-weight:500;padding:3px 4px;border-bottom:1px solid var(--subtle)}
+.pulse-table td{padding:3px 4px;font-family:'JetBrains Mono',monospace;color:#94a3b8;border-bottom:1px solid rgba(30,41,59,0.4)}
+.pulse-table td.det{color:var(--signal)}
+.pulse-table td.miss{color:var(--danger)}
+
+/* ── 3D Scene & Trace ── */
+.scene-container{position:relative;overflow:hidden;background:var(--bg)}
+.scene-container canvas{display:block;width:100%!important;height:100%!important}
+.trace-panel{border-top:1px solid var(--card-border);background:rgba(8,12,24,0.95);position:relative}
+.trace-panel canvas{display:block;width:100%;height:100%}
+.trace-label{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);z-index:1;pointer-events:none;white-space:nowrap}
+.ctrl-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.ctrl-btn{font-size:var(--fs-sm);padding:6px 18px;border-radius:6px;border:1px solid var(--subtle);background:rgba(13,20,36,0.85);color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;backdrop-filter:blur(4px);transition:all 0.15s}
+.ctrl-btn:hover{border-color:var(--primary);color:var(--primary)}
+.ctrl-btn.active{background:var(--primary);color:var(--bg);border-color:var(--primary)}
+.ctrl-btn.run{background:#059669;color:white;border-color:#059669}
+.ctrl-btn.run:hover{background:#047857}
+.ctrl-btn.danger{border-color:var(--danger);color:var(--danger)}
+
+/* ══════ DESIGNER PAGE ══════ */
+.designer-wrap{overflow-y:auto;padding:24px 32px;height:calc(100vh - 64px)}
+.designer-wrap::-webkit-scrollbar{width:5px}
+.designer-wrap::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:3px}
+.designer-title{font-size:var(--fs-xl);font-weight:700;margin-bottom:4px}
+.designer-subtitle{font-size:var(--fs-sm);color:var(--muted);margin-bottom:24px}
+.designer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;margin-bottom:24px}
+.d-card{background:linear-gradient(145deg,var(--card),#0a1020);border:1px solid var(--card-border);border-radius:10px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.02);transition:border-color 0.2s}
+.d-card:hover{border-color:rgba(6,182,212,0.3)}
+.d-card-title{font-size:var(--fs-md);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.d-card-title .dot{width:8px;height:8px;border-radius:50%}
+
+/* Material cards */
+.mat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mat-card{padding:10px 12px;border-radius:8px;border:1px solid var(--subtle);background:rgba(30,41,59,0.2);cursor:pointer;transition:all 0.2s}
+.mat-card:hover{border-color:var(--primary-dim);background:rgba(6,182,212,0.05)}
+.mat-card.selected{border-color:var(--primary);background:rgba(6,182,212,0.08);box-shadow:0 0 12px rgba(6,182,212,0.1)}
+.mat-card .mat-name{font-size:var(--fs-md);font-weight:600;color:var(--text);margin-bottom:2px}
+.mat-card .mat-sub{font-size:var(--fs-sm);color:var(--muted)}
+.mat-card .mat-accent{width:100%;height:2px;border-radius:1px;margin-bottom:6px}
+
+/* Bead cards on designer */
+.bead-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:10px}
+.bead-card{padding:8px 10px;border-radius:7px;border:1px solid var(--subtle);background:rgba(30,41,59,0.2);cursor:pointer;transition:all 0.15s;text-align:center}
+.bead-card:hover{border-color:var(--bead)}
+.bead-card.selected{border-color:var(--bead);background:rgba(245,158,11,0.08);box-shadow:0 0 8px rgba(245,158,11,0.1)}
+.bead-card .bead-name{font-size:var(--fs-md);font-weight:600;color:var(--text)}
+.bead-card .bead-sub{font-size:var(--fs-sm);color:var(--muted)}
+
+/* Props table */
+.props-table{width:100%;border-collapse:collapse;margin:8px 0}
+.props-table td{padding:4px 0;font-size:var(--fs-md);border-bottom:1px solid rgba(30,41,59,0.3)}
+.props-table td:first-child{color:var(--muted)}
+.props-table td:last-child{font-family:'JetBrains Mono',monospace;color:var(--text);text-align:right}
+.props-table td.computed{color:var(--primary)}
+.d-input-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.d-input-row label{font-size:var(--fs-md);color:#e2e8f0}
+.d-num-input{width:100px;background:rgba(30,41,59,0.5);border:1px solid var(--card-border);color:var(--primary);font-family:'JetBrains Mono',monospace;font-size:var(--fs-md);padding:6px 8px;border-radius:5px;text-align:right;outline:none}
+.d-num-input:focus{border-color:var(--primary)}
+.apply-btn{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#059669,#06b6d4);color:white;font-size:var(--fs-lg);font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;letter-spacing:0.5px}
+.apply-btn:hover{opacity:0.9}
+.divider{height:1px;background:var(--card-border);margin:10px 0}
+
+/* ══════ ANALYSIS PAGE ══════ */
+.analysis-wrap{overflow-y:auto;padding:24px 32px;height:calc(100vh - 64px)}
+.analysis-wrap::-webkit-scrollbar{width:5px}
+.analysis-wrap::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:3px}
+.analysis-title{font-size:var(--fs-xl);font-weight:700;margin-bottom:4px}
+.analysis-subtitle{font-size:var(--fs-sm);color:var(--muted);margin-bottom:20px}
+.sweep-config{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:900px){.sweep-config{grid-template-columns:1fr}}
+.sweep-config .d-card{padding:16px 20px}
+.sweep-select{width:100%;background:rgba(30,41,59,0.6);border:1px solid var(--card-border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:var(--fs-md);padding:8px 10px;border-radius:6px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M3 5l3 3 3-3z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.sweep-select:focus{border-color:var(--primary)}
+.sweep-select option{background:var(--card);color:var(--text)}
+.sweep-range-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.sweep-range-row label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;display:block}
+.sweep-range-row input{width:100%;background:rgba(30,41,59,0.5);border:1px solid var(--card-border);color:var(--primary);font-family:'JetBrains Mono',monospace;font-size:var(--fs-md);padding:6px 8px;border-radius:5px;text-align:center;outline:none}
+.sweep-range-row input:focus{border-color:var(--primary)}
+.sweep-actions{display:flex;gap:8px;margin-top:12px}
+.sweep-btn{padding:10px 24px;border-radius:7px;border:none;font-size:var(--fs-md);font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;letter-spacing:0.3px}
+.sweep-btn.run{background:linear-gradient(135deg,#059669,#06b6d4);color:white}
+.sweep-btn.run:hover{opacity:0.9}
+.sweep-btn.run:disabled{opacity:0.4;cursor:default}
+.sweep-btn.export{background:transparent;border:1px solid var(--card-border);color:var(--text)}
+.sweep-btn.export:hover{border-color:var(--primary);color:var(--primary)}
+.sweep-btn.export:disabled{opacity:0.3;cursor:default}
+.sweep-progress{height:3px;background:var(--subtle);border-radius:2px;margin-top:10px;overflow:hidden}
+.sweep-progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--signal));border-radius:2px;transition:width 0.15s}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:1000px){.chart-grid{grid-template-columns:1fr}}
+.chart-card{background:linear-gradient(145deg,var(--card),#0a1020);border:1px solid var(--card-border);border-radius:10px;padding:16px;position:relative;overflow:hidden}
+.chart-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(6,182,212,0.008) 3px,rgba(6,182,212,0.008) 4px);pointer-events:none;z-index:1}
+.chart-card canvas{display:block;width:100%;border-radius:6px;position:relative;z-index:2}
+.chart-title{font-size:var(--fs-md);font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.chart-title::before{content:'';width:6px;height:6px;border-radius:50%}
+.chart-title.volt::before{background:var(--signal)}
+.chart-title.det::before{background:var(--bead)}
+.sweep-results{background:linear-gradient(145deg,var(--card),#0a1020);border:1px solid var(--card-border);border-radius:10px;padding:16px;overflow-x:auto}
+.sweep-results table{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+.sweep-results th{color:var(--muted);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--subtle);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap}
+.sweep-results td{padding:5px 8px;font-family:'JetBrains Mono',monospace;color:#94a3b8;border-bottom:1px solid rgba(30,41,59,0.3)}
+.sweep-results td.highlight{color:var(--signal);font-weight:500}
+.compare-toggle{display:flex;align-items:center;gap:8px;margin-top:8px}
+.compare-toggle label{font-size:var(--fs-sm);color:#e2e8f0;cursor:pointer}
+.compare-toggle input[type=checkbox]{accent-color:var(--primary);width:14px;height:14px;cursor:pointer}
+.mat-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.mat-legend-item{display:flex;align-items:center;gap:5px;font-size:var(--fs-sm);color:var(--muted)}
+.mat-legend-item .swatch{width:10px;height:3px;border-radius:1px}
+
+/* ══════ INTRO / LANDING PAGE ══════ */
+.intro-wrap{overflow-y:auto;height:calc(100vh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px;text-align:center;position:relative;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(6,182,212,0.06),transparent 70%)}
+.intro-wrap::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 60px,rgba(6,182,212,0.015) 60px,rgba(6,182,212,0.015) 61px),repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(6,182,212,0.015) 60px,rgba(6,182,212,0.015) 61px);pointer-events:none}
+.intro-logo{font-size:var(--fs-hero);font-weight:800;letter-spacing:-2px;margin-bottom:8px;background:linear-gradient(135deg,#06b6d4 0%,#10b981 40%,#f59e0b 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:introFade 1s ease-out}
+.intro-logo .mu{font-size:80px}
+.intro-tagline{font-size:var(--fs-xl);font-weight:400;color:var(--text);margin-bottom:6px;letter-spacing:0.2px;animation:introFade 1s ease-out 0.15s both}
+.intro-desc{font-size:var(--fs-md);color:var(--muted);max-width:640px;line-height:1.7;margin-bottom:40px;animation:introFade 1s ease-out 0.3s both}
+.intro-features{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:900px;width:100%;margin-bottom:48px;animation:introFade 1s ease-out 0.45s both}
+@media(max-width:800px){.intro-features{grid-template-columns:1fr 1fr}}
+.intro-feat{background:linear-gradient(145deg,var(--card),#0a1020);border:1px solid var(--card-border);border-radius:12px;padding:24px 18px;text-align:center;transition:border-color 0.2s,transform 0.2s}
+.intro-feat:hover{border-color:rgba(6,182,212,0.4);transform:translateY(-2px)}
+.intro-feat-icon{font-size:32px;margin-bottom:10px;display:block}
+.intro-feat-title{font-size:var(--fs-md);font-weight:700;color:var(--text);margin-bottom:4px}
+.intro-feat-sub{font-size:var(--fs-sm);color:var(--muted);line-height:1.5}
+.intro-enter{padding:16px 48px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#06b6d4);color:white;font-size:var(--fs-xl);font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.5px;transition:all 0.2s;box-shadow:0 4px 24px rgba(6,182,212,0.3);animation:introFade 1s ease-out 0.6s both}
+.intro-enter:hover{transform:translateY(-1px);box-shadow:0 6px 32px rgba(6,182,212,0.4)}
+.intro-footer{margin-top:40px;font-size:var(--fs-sm);color:var(--muted);animation:introFade 1s ease-out 0.75s both}
+.intro-footer a{color:var(--primary);text-decoration:none}
+.intro-footer a:hover{text-decoration:underline}
+.intro-stats{display:flex;gap:32px;margin-top:20px;animation:introFade 1s ease-out 0.7s both}
+.intro-stat{text-align:center}
+.intro-stat-num{font-family:'JetBrains Mono',monospace;font-size:var(--fs-3xl);font-weight:700;color:var(--primary)}
+.intro-stat-label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+@keyframes introFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════ THEORY PAGE ══════ */
+.theory-wrap{overflow-y:auto;padding:32px 40px;height:calc(100vh - 64px);max-width:900px;margin:0 auto}
+.theory-wrap::-webkit-scrollbar{width:5px}
+.theory-wrap::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:3px}
+.theory-h1{font-size:var(--fs-2xl);font-weight:700;margin-bottom:4px;letter-spacing:-0.3px}
+.theory-sub{font-size:var(--fs-sm);color:var(--muted);margin-bottom:28px;line-height:1.6}
+.theory-section{margin-bottom:28px}
+.theory-h2{font-size:var(--fs-lg);font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:0.2px}
+.theory-h2::before{content:'';width:4px;height:18px;border-radius:2px;background:var(--primary)}
+.theory-h2.mag::before{background:var(--bead)}
+.theory-h2.field::before{background:#3b82f6}
+.theory-h2.hall::before{background:var(--sensor)}
+.theory-h2.flow::before{background:var(--signal)}
+.theory-h2.det::before{background:var(--danger)}
+.theory-h2.mat::before{background:var(--primary)}
+.theory-h2.ref::before{background:#64748b}
+.theory-p{font-size:var(--fs-sm);color:#94a3b8;line-height:1.7;margin-bottom:10px}
+.theory-eq-block{background:rgba(6,182,212,0.03);border:1px solid rgba(6,182,212,0.1);border-left:3px solid var(--primary-dim);border-radius:0 8px 8px 0;padding:14px 18px;margin:10px 0 14px;font-family:'JetBrains Mono',monospace}
+.theory-eq-main{font-size:var(--fs-lg);color:var(--text);margin-bottom:6px;letter-spacing:0.3px}
+.theory-eq-params{font-size:var(--fs-sm);color:var(--muted);line-height:1.8}
+.theory-eq-params span{color:#94a3b8}
+.theory-eq-ref{font-size:var(--fs-xs);color:var(--primary-dim);margin-top:4px;font-style:italic;font-family:'DM Sans',sans-serif}
+.theory-table-wrap{overflow-x:auto;margin:10px 0 16px}
+.theory-table{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+.theory-table th{color:var(--muted);font-weight:600;text-align:left;padding:7px 10px;border-bottom:2px solid var(--subtle);font-size:var(--fs-xs);text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap}
+.theory-table td{padding:5px 10px;border-bottom:1px solid rgba(30,41,59,0.3);color:#94a3b8}
+.theory-table td:first-child{color:var(--text);font-weight:500}
+.theory-table td.mono{font-family:'JetBrains Mono',monospace;font-size:var(--fs-sm)}
+.theory-table td.accent{color:var(--primary)}
+.theory-table tr:hover td{background:rgba(6,182,212,0.02)}
+.theory-ref-list{list-style:none;padding:0;margin:0}
+.theory-ref-list li{font-size:var(--fs-sm);color:#94a3b8;line-height:1.7;padding:5px 0;border-bottom:1px solid rgba(30,41,59,0.2)}
+.theory-ref-list li strong{color:var(--text);font-weight:500}
+.theory-ref-list li em{color:var(--primary-dim);font-style:normal}
+
+/* ── CSV export button in sidebar ── */
+.export-csv-btn{width:100%;padding:8px;border-radius:5px;border:1px solid var(--card-border);background:transparent;color:var(--muted);font-size:var(--fs-xs);font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;transition:all 0.15s;letter-spacing:0.5px;text-transform:uppercase;font-weight:600}
+.export-csv-btn:hover{border-color:var(--primary);color:var(--primary)}
+.app-copyright{position:fixed;bottom:8px;right:14px;font-size:var(--fs-xs);color:rgba(100,116,139,0.5);z-index:5;pointer-events:none;letter-spacing:0.3px}
+
+/* ── FEM Solver Page ── */
+.fem-wrap{overflow-y:auto;padding:20px 24px;height:calc(100vh - 64px);display:grid;grid-template-columns:270px 1fr 1fr;grid-template-rows:auto auto auto;gap:14px;align-content:start}
+.fem-controls{grid-row:1/4;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 104px)}
+.fem-controls::-webkit-scrollbar{width:3px}
+.fem-controls::-webkit-scrollbar-thumb{background:var(--subtle);border-radius:2px}
+.fem-canvas-wrap{position:relative;border:1px solid var(--card-border);border-radius:10px;background:var(--card);overflow:hidden;min-height:400px;grid-column:2/4}
+.fem-canvas-wrap canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.fem-tooltip{position:absolute;pointer-events:none;background:rgba(6,10,20,0.92);border:1px solid var(--primary-dim);border-radius:6px;padding:8px 12px;font-size:var(--fs-xs);color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1.6;backdrop-filter:blur(6px);z-index:10;white-space:nowrap;opacity:0;transition:opacity 0.12s}
+.fem-tooltip.vis{opacity:1}
+.fem-tooltip .tt-label{color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+.fem-tooltip .tt-val{color:var(--primary);font-weight:500}
+.fem-tooltip .tt-val.pos{color:#f59e0b}
+.fem-tooltip .tt-val.neg{color:#3b82f6}
+.fem-comparison{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px}
+.fem-comparison canvas{display:block;width:100%;cursor:crosshair}
+.fem-convergence{border:1px solid var(--card-border);border-radius:10px;background:var(--card);padding:16px}
+.fem-convergence canvas{display:block;width:100%}
+.fem-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.fem-result-card{background:rgba(6,182,212,0.04);border:1px solid var(--card-border);border-radius:8px;padding:10px 12px;text-align:center;transition:border-color 0.2s}
+.fem-result-card:hover{border-color:rgba(6,182,212,0.3)}
+.fem-result-label{font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.fem-result-value{font-size:var(--fs-lg);font-family:'JetBrains Mono',monospace;color:var(--primary)}
+.fem-result-value.warn{color:var(--gold)}
+.fem-result-value.good{color:var(--signal)}
+.fem-solve-btn{width:100%;padding:10px;border-radius:6px;border:none;background:linear-gradient(135deg,var(--primary),#0891b2);color:#fff;font-size:var(--fs-md);font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s}
+.fem-solve-btn:hover{filter:brightness(1.15)}
+.fem-solve-btn:disabled{opacity:0.5;cursor:not-allowed}
+.fem-status{font-size:var(--fs-xs);color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:6px;line-height:1.5}
+.fem-view-tabs{display:flex;gap:2px;margin-bottom:8px}
+.fem-view-tab{flex:1;text-align:center;font-size:var(--fs-xs);padding:5px 8px;border-radius:4px;border:1px solid var(--subtle);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.15s}
+.fem-view-tab:hover{color:var(--text);border-color:var(--primary-dim)}
+.fem-view-tab.active{background:var(--primary);color:var(--bg);border-color:var(--primary);font-weight:600}
+.fem-explain{font-size:var(--fs-xs);color:var(--muted);line-height:1.65;padding:10px 12px;background:rgba(6,182,212,0.03);border:1px solid var(--card-border);border-radius:8px;margin-top:8px}
+.fem-explain b{color:#94a3b8;font-weight:600}
+.fem-explain .eq-inline{font-family:'JetBrains Mono',monospace;color:var(--primary);font-size:var(--fs-xs);background:rgba(6,182,212,0.06);padding:1px 5px;border-radius:3px}
+.fem-progress{width:100%;height:4px;border-radius:2px;background:var(--subtle);overflow:hidden;margin-top:6px}
+.fem-progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--signal));border-radius:2px;transition:width 0.1s}
+.fem-mesh-info{font-size:var(--fs-xs);color:var(--muted);line-height:1.5;margin-top:4px;display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.fem-mesh-info .mi-label{color:#64748b}
+.fem-mesh-info .mi-val{font-family:'JetBrains Mono',monospace;color:#94a3b8}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+import*as THREE from'three';
+import{OrbitControls}from'three/addons/controls/OrbitControls.js';
+
+const{useState,useEffect,useRef,useMemo,useCallback}=React;
+const h=React.createElement;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PHYSICS ENGINE
+// Based on: Govindaraju & Hassan, Sensors & Actuators: A. Physical 393 (2025)
+// ══════════════════════════════════════════════════════════════════════════════
+const MU0 = 4*Math.PI*1e-7;
+const EC  = 1.602176634e-19;
+
+function beadMoment(r, mu_r, B0) {
+  const chi = 3*(mu_r - 1)/(mu_r + 2);
+  return (4/3)*Math.PI*r*r*r * chi * B0 / MU0;
+}
+
+function dipBz(m, dx, dy, dz) {
+  const r2 = dx*dx + dy*dy + dz*dz;
+  if (r2 < 1e-30) return 0;
+  return (MU0/(4*Math.PI)) * m * (2*dz*dz - dx*dx - dy*dy) / Math.pow(r2, 2.5);
+}
+
+function volumeAvgBz(m, bx, by, r, sW, t, nxy, nz) {
+  nxy = nxy || 10; nz = nz || 3;
+  const hw = sW/2, stxy = sW/nxy, stz = t/nz;
+  let total = 0;
+  for (let iz = 0; iz < nz; iz++) {
+    const dz = r + (iz + 0.5)*stz;
+    for (let ix = 0; ix < nxy; ix++) {
+      const sx = -hw + (ix + 0.5)*stxy;
+      for (let iy = 0; iy < nxy; iy++) {
+        const sy = -hw + (iy + 0.5)*stxy;
+        total += dipBz(m, bx - sx, by - sy, dz);
+      }
+    }
+  }
+  return total / (nxy * nxy * nz);
+}
+
+function flowVelocity(y, H, vAvg) {
+  const eta = 2*y/H - 1;
+  return 1.5*vAvg*(1 - eta*eta);
+}
+
+// Compute material-derived Hall properties with optional gate voltage
+function computeMatProps(mat, Vg) {
+  const mu_SI = mat.mu * 1e-4; // cm²/Vs → m²/Vs
+  let n = mat.n;
+
+  // Gate-tunable 2D materials: n(Vg) = sqrt(n_res² + (Cox·|Vg - V_CNP|/e)²)
+  // This model smoothly interpolates from residual density at CNP to gate-induced density
+  if (mat.gate && Vg !== undefined && Vg !== null) {
+    const eps0 = 8.854e-12;
+    const Cox = eps0 * mat.gate.eps_r / mat.gate.d_ox; // F/m²
+    const nGate = Cox * Math.abs(Vg - mat.gate.V_CNP) / EC; // gate-induced density
+    const nRes = mat.gate.n_res; // residual/puddle density at CNP
+    n = Math.sqrt(nRes * nRes + nGate * nGate); // smooth crossover
+  }
+
+  const RH = 1 / (n * EC);
+  const sigma = n * EC * mu_SI;
+  const SI = Math.abs(RH);
+  return { RH, sigma, SI, mu_SI, n };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MATERIAL & BEAD LIBRARIES
+// ══════════════════════════════════════════════════════════════════════════════
+const MATERIALS = [
+  // ── 2D Gate-Tunable Materials ──
+  {id:'graphene', name:'Graphene (CVD)', mu:3000, n:5e15, dim:'2D', color:'#06b6d4',
+   desc:'Monolayer CVD graphene on 285 nm SiO\u2082/Si', ref:'Xu 2013, Huang 2014',
+   gate:{eps_r:3.9, d_ox:285e-9, V_CNP:0, n_res:4e15, Vg_range:[-60,60]}},
+  {id:'graphene-hbn', name:'Graphene/hBN', mu:40000, n:1.1e15, dim:'2D', color:'#22d3ee',
+   desc:'hBN-encapsulated graphene, S\u1d62=5700 V/AT, <50 nT/\u221aHz', ref:'Dauber 2015, Ouaj 2025',
+   gate:{eps_r:3.5, d_ox:30e-9, V_CNP:0.2, n_res:1e15, Vg_range:[-5,5]}},
+  {id:'graphene-sic', name:'Graphene/SiC', mu:3000, n:7.5e16, dim:'2D', color:'#2dd4bf',
+   desc:'Epitaxial graphene on 4H-SiC, \u03bc\u22481400\u20133300 cm\u00b2/Vs, stable to 770 K', ref:'Ciuk 2019, Panchal 2012',
+   gate:null},
+  {id:'gaas', name:'GaAs/AlGaAs 2DEG', mu:7000, n:5e15, dim:'2D', color:'#a78bfa',
+   desc:'Pseudomorphic AlGaAs/InGaAs/GaAs 2DEG, nano-tesla resolution', ref:'Haned 2003, Kunets 2008, Boero 2003',
+   gate:{eps_r:12.9, d_ox:80e-9, V_CNP:-0.5, n_res:2e15, Vg_range:[-2,1]}},
+  {id:'algangan', name:'AlGaN/GaN 2DEG', mu:1500, n:1e17, dim:'2D', color:'#34d399',
+   desc:'AlGaN/GaN HEMT, S\u1d62=94.6 V/AT, stable >573 K', ref:'Zhang 2021, Koide 2012',
+   gate:{eps_r:9.5, d_ox:25e-9, V_CNP:-4.5, n_res:5e15, Vg_range:[-6,0]}},
+  // ── 3D Bulk Materials (no gate) ──
+  {id:'insb', name:'InSb (MBE)', mu:35000, n:2e22, dim:'3D', color:'#f59e0b',
+   desc:'Sn-doped InSb thin film on GaAs, µ≈35000 cm²/Vs at 300 K', ref:'Togawa 2005, Okamoto 2003, Sandhu 2004, Kazakova 2009',
+   gate:null},
+  {id:'inas', name:'InAs (thin film)', mu:22000, n:1.5e23, dim:'3D', color:'#fb923c',
+   desc:'Narrow-gap III-V, high mobility thin film', ref:'Boero 2003, Heremans 1993, Mihajlovic 2005',
+   gate:null},
+  {id:'inas-alsb', name:'InAs/AlSb 2DEG', mu:22000, n:1e16, dim:'2D', color:'#fdba74',
+   desc:'InAs QW in AlSb barrier, single-bead detection demonstrated', ref:'Mihajlovic 2005, Boero 2003, Heremans 1993',
+   gate:null},
+  {id:'insb-qw', name:'InSb Quantum Well', mu:42000, n:5e15, dim:'2D', color:'#fbbf24',
+   desc:'InSb/AlInSb QW 2DEG, µ=41500 cm²/Vs at 295 K', ref:'Gilbertson 2011, Kunets 2009, Sandhu 2004',
+   gate:{eps_r:15.2, d_ox:50e-9, V_CNP:-1.0, n_res:1e15, Vg_range:[-3,1]}},
+  {id:'si', name:'Silicon CMOS', mu:1400, n:1e22, dim:'3D', color:'#94a3b8',
+   desc:'N-type Si, standard CMOS n-well, S\u1d62=175 V/AT', ref:'Besse 2002, Boero 2003',
+   gate:null},
+  {id:'bismuth', name:'Bismuth (thin film)', mu:15000, n:3e23, dim:'3D', color:'#c084fc',
+   desc:'Semimetal, giant R\u2095 ~ \u22121 cm\u00b3/C, 200 nm films', ref:'Komnik 1975, Heremans 1993',
+   gate:null},
+  {id:'bise', name:'Bi\u2082Se\u2083 (TI)', mu:3000, n:2e16, dim:'2D', color:'#e879f9',
+   desc:'Topological surface states, ambipolar gating through Dirac point', ref:'Saeed 2024, Koirala 2015',
+   gate:{eps_r:3.9, d_ox:300e-9, V_CNP:15, n_res:1.5e16, Vg_range:[-20,50]}},
+];
+
+const BEAD_LIBRARY = [
+  {id:'nanomag',  name:'nanomag-D 250',    d:0.25e-6,  mu_r:40, label:'250 nm', ref:'Micromod'},
+  {id:'speed',    name:'SpeedBeads',        d:0.89e-6,  mu_r:10, label:'890 nm', ref:'Cytiva'},
+  {id:'myone',    name:'Dynabeads MyOne',   d:1.05e-6,  mu_r:10, label:'1.05 \u00b5m', ref:'Thermo Fisher'},
+  {id:'m280',     name:'Dynabeads M-280',   d:2.83e-6,  mu_r:10, label:'2.83 \u00b5m', ref:'Thermo Fisher'},
+  {id:'m450',     name:'Dynabeads M-450',   d:4.5e-6,   mu_r:10, label:'4.5 \u00b5m', ref:'Thermo Fisher'},
+  {id:'mag2',     name:'Magnetite 2 \u00b5m',  d:2e-6,  mu_r:10, label:'2 \u00b5m', ref:'Generic'},
+  {id:'mag6',     name:'Magnetite 6 \u00b5m',  d:6e-6,  mu_r:10, label:'6 \u00b5m', ref:'Generic'},
+  {id:'mag10',    name:'Magnetite 10 \u00b5m', d:10e-6, mu_r:10, label:'10 \u00b5m', ref:'Generic'},
+];
+
+const SENSOR_PRESETS = [
+  {name:'I',   size:5e-6,  t:0.5e-6, label:'5\u00d75 \u00b5m'},
+  {name:'II',  size:10e-6, t:1e-6,   label:'10\u00d710 \u00b5m'},
+  {name:'III', size:50e-6, t:1e-6,   label:'50\u00d750 \u00b5m'},
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UI COMPONENTS
+// ══════════════════════════════════════════════════════════════════════════════
+function Slider({label, value, min, max, step, unit, onChange, disabled}) {
+  const s = step || 1;
+  const fmt = s < 0.01 ? value.toFixed(3) : s < 0.1 ? value.toFixed(2) : s < 1 ? value.toFixed(1) : Math.round(value);
+  return h('div',{className:'slider-row'},
+    h('div',{className:'slider-header'},
+      h('span',{className:'slider-name'},label),
+      h('span',{className:'slider-val'},fmt+(unit||''))
+    ),
+    h('input',{type:'range',min,max,step:s,value,disabled:!!disabled,
+      onChange:e=>onChange(+e.target.value)})
+  );
+}
+
+function NumField({label, value, unit, onChange, min, max, step, disabled}) {
+  return h('div',{className:'input-row'},
+    h('label',null,label),
+    h('span',null,
+      h('input',{type:'number',className:'num-input',value,min,max,step:step||'any',disabled:!!disabled,
+        onChange:e=>onChange(+e.target.value)}),
+      unit && h('span',{className:'unit'},unit)
+    )
+  );
+}
+
+function fmtSci(v, d) {
+  if (v === 0) return '0';
+  const exp = Math.floor(Math.log10(Math.abs(v)));
+  if (Math.abs(exp) <= 2) return v.toFixed(d || 4);
+  return (v / Math.pow(10, exp)).toFixed(d || 2) + '\u00d710' + superscript(exp);
+}
+function superscript(n) {
+  const s = n.toString();
+  return s.replace(/[-]/g,'\u207b').replace(/0/g,'\u2070').replace(/1/g,'\u00b9').replace(/2/g,'\u00b2').replace(/3/g,'\u00b3').replace(/4/g,'\u2074').replace(/5/g,'\u2075').replace(/6/g,'\u2076').replace(/7/g,'\u2077').replace(/8/g,'\u2078').replace(/9/g,'\u2079');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 3D SCENE MANAGER (unchanged from original)
+// ══════════════════════════════════════════════════════════════════════════════
+class FluidScene {
+  constructor(container) {
+    this.container = container;
+    const W = container.clientWidth, H = container.clientHeight;
+    this.renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(W, H);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.2;
+    container.appendChild(this.renderer.domElement);
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x060a14);
+    this.scene.fog = new THREE.FogExp2(0x060a14, 0.005);
+    this.camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 500);
+    this.camera.position.set(22, 16, 22);
+    this.camera.lookAt(0, 1, 0);
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.08;
+    this.controls.target.set(0, 1, 0);
+    this.controls.minDistance = 8;
+    this.controls.maxDistance = 60;
+    this.scene.add(new THREE.AmbientLight(0x334466, 0.6));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+    dl.position.set(10, 20, 10); this.scene.add(dl);
+    const dl2 = new THREE.DirectionalLight(0x4488cc, 0.3);
+    dl2.position.set(-10, 10, -10); this.scene.add(dl2);
+    const grid = new THREE.GridHelper(60, 30, 0x112244, 0x0a1530);
+    grid.position.y = -4; this.scene.add(grid);
+    this.channelGroup = new THREE.Group(); this.scene.add(this.channelGroup);
+    this.chmaGroup = new THREE.Group(); this.scene.add(this.chmaGroup);
+    this.buildCHMA();
+    this.sensorMesh = null; this.sensorGlow = null;
+    this.beadMeshes = [];
+    this.beadGeom = new THREE.SphereGeometry(1, 20, 14);
+    this.beadMat = new THREE.MeshStandardMaterial({
+      color:0xf59e0b, emissive:0xf59e0b, emissiveIntensity:0.3, metalness:0.4, roughness:0.3
+    });
+    this.sensorLight = new THREE.PointLight(0xa78bfa, 0, 8);
+    this.sensorLight.position.set(0, -0.5, 0); this.scene.add(this.sensorLight);
+    this._onResize = () => {
+      const w = container.clientWidth, hh = container.clientHeight;
+      this.camera.aspect = w/hh; this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w, hh);
+    };
+    window.addEventListener('resize', this._onResize);
+  }
+
+  buildChannel(sceneLen, sceneH, sceneW) {
+    this.channelGroup.clear(); this.chLen = sceneLen;
+    const pdmsW = Math.max(sceneW * 3, 8);
+    const pdmsGeo = new THREE.BoxGeometry(sceneLen * 1.1, sceneH + 0.6, pdmsW);
+    const pdmsMat = new THREE.MeshPhysicalMaterial({color:0x88ccee, transparent:true, opacity:0.03, roughness:0.1, metalness:0, side:THREE.DoubleSide, depthWrite:false});
+    const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
+    pdms.position.y = sceneH/2 + 0.3; this.channelGroup.add(pdms);
+    const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
+    const edges = new THREE.EdgesGeometry(chGeo);
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color:0x2a6a9a, transparent:true, opacity:0.5}));
+    line.position.y = sceneH/2; this.channelGroup.add(line);
+    const chMat = new THREE.MeshPhysicalMaterial({color:0x44aadd, transparent:true, opacity:0.04, side:THREE.DoubleSide, depthWrite:false});
+    this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(sceneLen, pdmsW), new THREE.MeshStandardMaterial({color:0x1a2a4a, transparent:true, opacity:0.2, side:THREE.DoubleSide}));
+    floor.rotation.x = -Math.PI/2; floor.position.y = 0.01; this.channelGroup.add(floor);
+    const arrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(-sceneLen/2 - 2, sceneH/2, 0), 3, 0x06b6d4, 0.6, 0.3);
+    this.channelGroup.add(arrow);
+    const lc = document.createElement('canvas'); lc.width = 128; lc.height = 32;
+    const ctx = lc.getContext('2d'); ctx.fillStyle = '#06b6d4'; ctx.font = 'bold 16px DM Sans'; ctx.fillText('FLOW \u2192', 8, 22);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(lc), transparent:true, opacity:0.5}));
+    sp.scale.set(3.5, 0.9, 1); sp.position.set(-sceneLen/2 - 2, sceneH + 0.8, 0); this.channelGroup.add(sp);
+  }
+
+  buildSensor(w, t, d) {
+    if (this.sensorMesh) { this.scene.remove(this.sensorMesh); this.scene.remove(this.sensorGlow); }
+    const geo = new THREE.BoxGeometry(w, Math.max(t, 0.1), d);
+    const mat = new THREE.MeshStandardMaterial({color:0x8b5cf6, emissive:0x6d28d9, emissiveIntensity:0.4, metalness:0.6, roughness:0.2});
+    this.sensorMesh = new THREE.Mesh(geo, mat);
+    this.sensorMesh.position.y = -Math.max(t, 0.1)/2; this.scene.add(this.sensorMesh);
+    const glowGeo = new THREE.PlaneGeometry(w * 1.6, d * 1.6);
+    this.sensorGlow = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({color:0x8b5cf6, transparent:true, opacity:0.05, side:THREE.DoubleSide}));
+    this.sensorGlow.rotation.x = -Math.PI/2; this.sensorGlow.position.y = 0.03; this.scene.add(this.sensorGlow);
+  }
+
+  buildCHMA() {
+    this.chmaGroup.clear();
+    const nMag = 8, radius = 7, magW = 2.5, magH = 2, magD = 2.5;
+    // Halbach k=1 pattern: magnetization angle = 2 * angular position
+    // This produces a uniform transverse field inside the bore (pointing in -Y)
+    // Color encodes magnetization direction: red=up(+Y), blue=down(-Y), blends for sideways
+    for (let i = 0; i < nMag; i++) {
+      const angle = (i / nMag) * Math.PI * 2; // angular position of segment
+      const magAngle = 2 * angle; // Halbach: magnetization rotates at 2x
+      const py = Math.cos(angle) * radius, pz = Math.sin(angle) * radius;
+      // Map magnetization direction to color: -Y component -> red, +Y -> blue
+      const my = -Math.sin(magAngle); // Y-component of magnetization (field points -Y)
+      const mz = Math.cos(magAngle);  // Z-component
+      const rComp = Math.max(0, my);       // red for +Y (outward at top)
+      const bComp = Math.max(0, -my);      // blue for -Y (inward at top)
+      const r8 = Math.floor(0x60 + rComp * 0x7f), g8 = Math.floor(0x20 + (1 - Math.abs(my)) * 0x30), b8 = Math.floor(0x60 + bComp * 0x7f);
+      const col = (r8 << 16) | (g8 << 8) | b8;
+      const emR = Math.floor(rComp * 0x50), emB = Math.floor(bComp * 0x50);
+      const emCol = (emR << 16) | (0x10 << 8) | emB;
+      const mat = new THREE.MeshStandardMaterial({
+        color: col, emissive: emCol, emissiveIntensity: 0.35, metalness: 0.7, roughness: 0.3
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(magD, magH, magW), mat);
+      mesh.position.set(0, py, pz); mesh.lookAt(0, 0, 0); this.chmaGroup.add(mesh);
+      // Magnetization direction arrow on each segment
+      const arrowDir = new THREE.Vector3(0, Math.sin(magAngle), -Math.cos(magAngle)).normalize();
+      const arrowOrigin = new THREE.Vector3(0, py, pz);
+      const segArrow = new THREE.ArrowHelper(arrowDir, arrowOrigin, 1.8, 0xffffff, 0.3, 0.2);
+      segArrow.children.forEach(c => { if(c.material) { c.material.transparent = true; c.material.opacity = 0.5; }});
+      this.chmaGroup.add(segArrow);
+    }
+    // Support ring
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.12, 8, 32), new THREE.MeshStandardMaterial({color:0x334155, metalness:0.8, roughness:0.2}));
+    ring.rotation.y = Math.PI / 2; this.chmaGroup.add(ring);
+    // B₀ field arrows: perpendicular to sensor plane (pointing -Y, through bore center to sensor)
+    // These represent the uniform applied field from the Halbach array
+    for (let xi = -5; xi <= 5; xi += 5) {
+      for (let zi = -1; zi <= 1; zi += 2) {
+        const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(xi, 5, zi * 0.5), 5.5, 0x06b6d4, 0.5, 0.25);
+        arrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.2; }}); this.chmaGroup.add(arrow);
+      }
+    }
+    // Central bold arrow: B₀ straight down through sensor
+    const mainArrow = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 5.5, 0), 6, 0x06b6d4, 0.7, 0.35);
+    mainArrow.children.forEach(c => { if(c.material) { c.material.transparent=true; c.material.opacity=0.4; }}); this.chmaGroup.add(mainArrow);
+    // B0 label: perpendicular to sensor, not "transverse"
+    const bc = document.createElement('canvas'); bc.width = 180; bc.height = 32;
+    const bctx = bc.getContext('2d'); bctx.fillStyle = '#06b6d4'; bctx.font = 'bold 14px JetBrains Mono'; bctx.fillText('B\u2080 \u22A5 sensor plane', 4, 22);
+    const bsp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(bc), transparent:true, opacity:0.5}));
+    bsp.scale.set(5.5, 1, 1); bsp.position.set(0, 5.5, 0); this.chmaGroup.add(bsp);
+    // Bottom label
+    const lc = document.createElement('canvas'); lc.width = 512; lc.height = 32;
+    const lctx = lc.getContext('2d'); lctx.fillStyle = '#64748b'; lctx.font = '13px DM Sans';
+    lctx.fillText('8-segment N52 NdFeB Halbach array (bore axis \u2225 flow, B\u2080 \u22A5 sensor)', 10, 22);
+    const lsp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(lc), transparent:true, opacity:0.45}));
+    lsp.scale.set(16, 1.2, 1); lsp.position.set(0, -radius - 2.5, 0); this.chmaGroup.add(lsp);
+  }
+
+  getOrCreateBead(idx) {
+    while (this.beadMeshes.length <= idx) {
+      const m = new THREE.Mesh(this.beadGeom, this.beadMat.clone());
+      m.visible = false; this.scene.add(m); this.beadMeshes.push(m);
+    }
+    return this.beadMeshes[idx];
+  }
+  updateBeads(positions, rScene) {
+    for (let i = 0; i < this.beadMeshes.length; i++) this.beadMeshes[i].visible = false;
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i]; if (!p) continue;
+      const mesh = this.getOrCreateBead(i); mesh.visible = true;
+      mesh.position.set(p.sx, p.sy, p.sz); mesh.scale.setScalar(rScene);
+      mesh.material.emissive.setHex(p.detected ? 0x22c55e : 0xf59e0b);
+      mesh.material.emissiveIntensity = p.detected ? 0.6 : (0.2 + p.glow * 0.5);
+    }
+  }
+  setSensorGlow(intensity) {
+    this.sensorLight.intensity = intensity * 3;
+    if (this.sensorMesh) this.sensorMesh.material.emissiveIntensity = 0.3 + intensity * 0.7;
+  }
+  render() { this.controls.update(); this.renderer.render(this.scene, this.camera); }
+  dispose() {
+    window.removeEventListener('resize', this._onResize);
+    this.renderer.dispose();
+    if (this.renderer.domElement.parentNode) this.container.removeChild(this.renderer.domElement);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DESIGNER PAGE COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
+function DesignerPage({matIdx, setMatIdx, customMat, setCustomMat,
+  beadIdx, setBeadIdx, beadMode, setBeadMode, customBead, setCustomBead,
+  sensMode, setSensMode, sensIdx, setSensIdx, customSensor, setCustomSensor,
+  chH, setChH, flowVel, setFlowVel, B0, setB0, Vg, setVg, goToSim}) {
+
+  const mat = matIdx < MATERIALS.length ? MATERIALS[matIdx] : customMat;
+  const isCustomMat = matIdx >= MATERIALS.length;
+  const mp = computeMatProps(isCustomMat ? customMat : mat, Vg);
+  const activeBead = beadMode === 'custom' ? customBead : BEAD_LIBRARY[beadIdx];
+  const activeSensor = sensMode === 'custom' ? customSensor : SENSOR_PRESETS[sensIdx];
+  const chi = 3*(activeBead.mu_r - 1)/(activeBead.mu_r + 2);
+  const mom = beadMoment(activeBead.d/2, activeBead.mu_r, B0*1e-3);
+  const peakBz = volumeAvgBz(mom, 0, 0, activeBead.d/2 + 0.5e-6, activeSensor.size, activeSensor.t, 10, 3);
+  const peakVH = Math.abs(mp.RH * mp.sigma * peakBz * 5);
+
+  return h('div', {className:'designer-wrap'},
+    h('div', {className:'designer-title'}, 'Material & Design Configuration'),
+    h('div', {className:'designer-subtitle'}, 'Configure sensor material, bead type, and geometry. Changes apply to the simulator in real time.'),
+
+    h('div', {className:'designer-grid'},
+      // ─── Card 1: Hall Sensor Material ───
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--sensor)'}}), 'Hall Sensor Material'),
+        h('div', {className:'mat-grid'},
+          MATERIALS.map((m, i) =>
+            h('div', {key:m.id, className:'mat-card'+(matIdx===i?' selected':''), onClick:()=>setMatIdx(i)},
+              h('div', {className:'mat-accent', style:{background:m.color}}),
+              h('div', {className:'mat-name'}, m.name),
+              h('div', {className:'mat-sub'}, '\u03bc = '+m.mu.toLocaleString()+' cm\u00b2/Vs'),
+            )
+          ),
+          h('div', {className:'mat-card'+(isCustomMat?' selected':''), onClick:()=>setMatIdx(MATERIALS.length)},
+            h('div', {className:'mat-accent', style:{background:'#64748b'}}),
+            h('div', {className:'mat-name'}, 'Custom Material'),
+            h('div', {className:'mat-sub'}, 'User-defined properties'),
+          )
+        ),
+        isCustomMat && h('div', null,
+          h('div', {className:'divider'}),
+          h(NumField, {label:'Mobility \u03bc', value:customMat.mu, unit:'cm\u00b2/Vs',
+            onChange:v=>setCustomMat({...customMat, mu:v})}),
+          h(NumField, {label:'Carrier density n', value:customMat.n, unit:'m\u207b\u00b2',
+            onChange:v=>setCustomMat({...customMat, n:v})}),
+          h('div', {className:'input-row'},
+            h('label', null, 'Dimensionality'),
+            h('div', {className:'mode-tabs', style:{width:'120px'}},
+              h('button', {className:'mode-tab'+(customMat.dim==='2D'?' active':''), onClick:()=>setCustomMat({...customMat, dim:'2D'})}, '2D'),
+              h('button', {className:'mode-tab'+(customMat.dim==='3D'?' active':''), onClick:()=>setCustomMat({...customMat, dim:'3D'})}, '3D'),
+            )
+          ),
+        ),
+        h('div', {className:'divider'}),
+        h('div', {style:{fontSize:'10px',color:'var(--muted)',marginBottom:'4px'}}, 'Computed Properties'),
+        h('table', {className:'props-table'},
+          h('tbody', null,
+            h('tr',null, h('td',null,'R\u2095 (Hall coeff.)'), h('td',{className:'computed'}, fmtSci(mp.RH)+' m'+(mat.dim==='2D'?'\u00b2':'\u00b3')+'/C')),
+            h('tr',null, h('td',null,'\u03c3 (conductivity)'), h('td',{className:'computed'}, fmtSci(mp.sigma)+' S/m')),
+            h('tr',null, h('td',null,'|S\u1d62| (sensitivity)'), h('td',{className:'computed'}, fmtSci(mp.SI)+' V/AT')),
+            h('tr',null, h('td',null,'R\u2095\u00b7\u03c3 product'), h('td',{className:'computed'}, fmtSci(mp.RH*mp.sigma))),
+          )
+        ),
+        // Gate voltage control for gate-tunable materials
+        mat.gate && h('div', null,
+          h('div', {className:'divider'}),
+          h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'6px'}},
+            h('span', {style:{fontSize:'10px',color:'var(--muted)',fontWeight:600,textTransform:'uppercase',letterSpacing:'1px'}}, 'Gate Tuning'),
+            h('button', {className:'preset-btn', style:{fontSize:'9px'},
+              onClick:()=>setVg(Vg === null ? 0 : null)},
+              Vg === null ? 'Enable Gate' : 'Disable Gate'),
+          ),
+          Vg !== null && h('div', null,
+            h(NumField, {label:'Gate voltage V\u1d33', value:Vg, unit:'V',
+              onChange:v=>setVg(Math.max(mat.gate.Vg_range[0], Math.min(mat.gate.Vg_range[1], v)))}),
+            h('div', {style:{fontSize:'9px',color:'var(--muted)',marginTop:'2px'}},
+              'Range: '+mat.gate.Vg_range[0]+' to '+mat.gate.Vg_range[1]+' V | V\u0043\u004e\u0050 = '+mat.gate.V_CNP+' V'),
+            h('div', {style:{fontSize:'9px',color:'var(--muted)'}},
+              'n(V\u1d33) = '+fmtSci(mp.n)+' m\u207b\u00b2 (gate-tuned)'),
+          ),
+        ),
+        h('div', {className:'eq'}, 'R\u2095 = 1/(n\u00b7e) = '+fmtSci(mp.RH)+' | \u03c3 = n\u00b7e\u00b7\u03bc = '+fmtSci(mp.sigma)+' S/m'),
+        !isCustomMat && h('div',{className:'note'}, mat.desc+' \u2014 '+mat.ref),
+      ),
+
+      // ─── Card 2: Sensor Geometry ───
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), 'Sensor Geometry'),
+        h('div', {className:'mode-tabs', style:{marginBottom:'10px'}},
+          h('button', {className:'mode-tab'+(sensMode==='preset'?' active':''), onClick:()=>setSensMode('preset')}, 'Presets'),
+          h('button', {className:'mode-tab'+(sensMode==='custom'?' active':''), onClick:()=>setSensMode('custom')}, 'Custom'),
+        ),
+        sensMode === 'preset'
+          ? h('div', {className:'preset-row'}, SENSOR_PRESETS.map((s, i) =>
+              h('button', {key:i, className:'preset-btn'+(sensIdx===i?' active':''), onClick:()=>setSensIdx(i)},
+                'Design '+s.name+' ('+s.label+')')
+            ))
+          : h('div', null,
+              h(NumField, {label:'Sensor side w', value:+(customSensor.size*1e6).toFixed(1), unit:'\u00b5m',
+                onChange:v=>setCustomSensor({...customSensor, size:v*1e-6})}),
+              h(NumField, {label:'Thickness t', value:+(customSensor.t*1e6).toFixed(2), unit:'\u00b5m',
+                onChange:v=>setCustomSensor({...customSensor, t:v*1e-6})}),
+            ),
+        h('div', {className:'divider'}),
+        h('table', {className:'props-table'},
+          h('tbody', null,
+            h('tr',null, h('td',null,'Active area'), h('td',null, (activeSensor.size*1e6).toFixed(1)+' \u00d7 '+(activeSensor.size*1e6).toFixed(1)+' \u00b5m\u00b2')),
+            h('tr',null, h('td',null,'Thickness'), h('td',null, (activeSensor.t*1e6).toFixed(2)+' \u00b5m')),
+          )
+        ),
+
+        // Channel
+        h('div', {className:'divider'}),
+        h('div', {style:{fontSize:'10px',color:'var(--muted)',fontWeight:600,marginBottom:'6px',textTransform:'uppercase',letterSpacing:'1px'}}, 'Microfluidic Channel'),
+        h(NumField, {label:'Channel height', value:chH, unit:'\u00b5m', onChange:setChH}),
+        h(NumField, {label:'Flow velocity v\u0304', value:flowVel, unit:'mm/s', onChange:setFlowVel}),
+        h(NumField, {label:'Applied field B\u2080', value:B0, unit:'mT', onChange:setB0}),
+      ),
+
+      // ─── Card 3: Bead Configuration ───
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--bead)'}}), 'Magnetic Bead'),
+        h('div', {className:'mode-tabs', style:{marginBottom:'10px'}},
+          h('button', {className:'mode-tab'+(beadMode==='preset'?' active':''), onClick:()=>setBeadMode('preset')}, 'Library'),
+          h('button', {className:'mode-tab'+(beadMode==='custom'?' active':''), onClick:()=>setBeadMode('custom')}, 'Custom'),
+        ),
+        beadMode === 'preset'
+          ? h('div', {className:'bead-grid'}, BEAD_LIBRARY.map((b, i) =>
+              h('div', {key:b.id, className:'bead-card'+(beadIdx===i?' selected':''), onClick:()=>setBeadIdx(i)},
+                h('div', {className:'bead-name'}, b.label),
+                h('div', {className:'bead-sub'}, b.name),
+              )
+            ))
+          : h('div', null,
+              h(NumField, {label:'Diameter', value:+(customBead.d*1e6).toFixed(2), unit:'\u00b5m',
+                onChange:v=>setCustomBead({...customBead, d:v*1e-6})}),
+              h(NumField, {label:'Relative perm. \u03bc\u1d63', value:customBead.mu_r, unit:'',
+                onChange:v=>setCustomBead({...customBead, mu_r:v})}),
+            ),
+        h('div', {className:'divider'}),
+        h('div', {style:{fontSize:'10px',color:'var(--muted)',marginBottom:'4px'}}, 'Computed at B\u2080 = '+B0+' mT'),
+        h('table', {className:'props-table'},
+          h('tbody', null,
+            h('tr',null, h('td',null,'\u03c7\u2091\u1da0\u1da0'), h('td',{className:'computed'}, chi.toFixed(3))),
+            h('tr',null, h('td',null,'Moment m'), h('td',{className:'computed'}, fmtSci(mom)+' A\u00b7m\u00b2')),
+            h('tr',null, h('td',null,'Peak \u27e8B\u1dbb\u27e9'), h('td',{className:'computed'}, fmtSci(peakBz)+' T')),
+            h('tr',null, h('td',null,'Est. \u0394V\u2095 (5V bias)'), h('td',{className:'computed'}, (peakVH*1e3).toFixed(3)+' mV')),
+          )
+        ),
+        h('div', {className:'eq'}, '\u03c7\u2091\u1da0\u1da0 = 3(\u03bc\u1d63\u22121)/(\u03bc\u1d63+2) | m = V\u1d47\u2091\u2090\u1d48\u00b7\u03c7\u2091\u1da0\u1da0\u00b7B\u2080/\u03bc\u2080'),
+      ),
+
+      // ─── Card 4: Physics Summary ───
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), 'System Summary'),
+        h('table', {className:'props-table'},
+          h('tbody', null,
+            h('tr',null, h('td',null,'Material'), h('td',null, isCustomMat ? 'Custom' : mat.name)),
+            mat.gate && Vg !== null && h('tr',null, h('td',null,'Gate V\u1d33'), h('td',{className:'computed'}, Vg.toFixed(1)+' V')),
+            h('tr',null, h('td',null,'Sensor'), h('td',null, (activeSensor.size*1e6).toFixed(1)+' \u00d7 '+(activeSensor.size*1e6).toFixed(1)+' \u00b5m')),
+            h('tr',null, h('td',null,'Bead'), h('td',null, beadMode==='custom' ? (customBead.d*1e6).toFixed(1)+' \u00b5m (custom)' : activeBead.name)),
+            h('tr',null, h('td',null,'B\u2080'), h('td',null, B0+' mT')),
+            h('tr',null, h('td',null,'R\u2095'), h('td',{className:'computed'}, fmtSci(mp.RH))),
+            h('tr',null, h('td',null,'\u03c3'), h('td',{className:'computed'}, fmtSci(mp.sigma)+' S/m')),
+            h('tr',null, h('td',null,'|S\u1d62|'), h('td',{className:'computed'}, fmtSci(mp.SI)+' V/AT')),
+            h('tr',null, h('td',null,'R\u2095\u00b7\u03c3'), h('td',{className:'computed'}, fmtSci(mp.RH*mp.sigma))),
+            h('tr',null, h('td',null,'Bead moment m'), h('td',{className:'computed'}, fmtSci(mom)+' A\u00b7m\u00b2')),
+            h('tr',null, h('td',null,'Peak \u0394V\u2095 (est.)'), h('td',{className:'computed', style:{color:'var(--signal)',fontWeight:600}}, (peakVH*1e3).toFixed(3)+' mV')),
+          )
+        ),
+        h('div',{style:{marginTop:'16px'}}),
+        h('button', {className:'apply-btn', onClick:goToSim}, '\u25B6  Open Simulator with This Configuration'),
+      ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CSV EXPORT UTILITY
+// ══════════════════════════════════════════════════════════════════════════════
+function downloadCSV(filename, headers, rows) {
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ANALYSIS PAGE — PARAMETRIC SWEEP ENGINE
+// ══════════════════════════════════════════════════════════════════════════════
+const SWEEP_VARS = [
+  {id:'bead_d', name:'Bead diameter', unit:'\u00b5m', min:0.25, max:15, steps:20, toSI:v=>v*1e-6},
+  {id:'sensor_size', name:'Sensor size', unit:'\u00b5m', min:2, max:100, steps:20, toSI:v=>v*1e-6},
+  {id:'flow_vel', name:'Flow velocity', unit:'mm/s', min:0.1, max:20, steps:20, toSI:v=>v*1e-3},
+  {id:'B0', name:'Applied field B\u2080', unit:'mT', min:10, max:500, steps:20, toSI:v=>v*1e-3},
+  {id:'ch_height', name:'Channel height', unit:'\u00b5m', min:10, max:200, steps:20, toSI:v=>v*1e-6},
+  {id:'distance', name:'Height above sensor', unit:'\u00b5m', min:0.5, max:30, steps:20, toSI:v=>v*1e-6},
+  {id:'gate_voltage', name:'Gate voltage V\u1d33', unit:'V', min:-60, max:60, steps:25, toSI:v=>v},
+];
+
+// Responsive canvas font helper — scales with chart width
+function chartFS(W, role) {
+  // W = logical chart width in CSS pixels
+  // Scales: on 600px chart ≈ base, on 300px ≈ 0.7x, on 900px ≈ 1.3x
+  const s = Math.max(0.7, Math.min(1.5, W / 550));
+  const sizes = {
+    axisLabel: Math.round(15 * s),    // "Peak ΔVₕ (mV)", "Bead diameter (µm)"
+    tickValue: Math.round(13 * s),    // "372.5", "100%", "0.3"
+    title:     Math.round(14 * s),    // chart inline titles / status text
+    threshold: Math.round(13 * s),    // "threshold" label
+  };
+  return sizes[role] || Math.round(13 * s);
+}
+
+function AnalysisPage({matIdx, customMat, beadIdx, beadMode, customBead,
+  sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight, Vg}) {
+
+  const [sweepVar, setSweepVar] = useState(0);
+  const [sweepMin, setSweepMin] = useState(SWEEP_VARS[0].min);
+  const [sweepMax, setSweepMax] = useState(SWEEP_VARS[0].max);
+  const [sweepSteps, setSweepSteps] = useState(SWEEP_VARS[0].steps);
+  const [compareMode, setCompareMode] = useState(false);
+  const [sweepState, setSweepState] = useState('idle'); // idle | running | done
+  const [sweepProgress, setSweepProgress] = useState(0);
+  const [sweepData, setSweepData] = useState(null);
+  const chart1Ref = useRef(null);
+  const chart2Ref = useRef(null);
+  const chart1ContRef = useRef(null);
+  const chart2ContRef = useRef(null);
+
+  const isCustomMat = matIdx >= MATERIALS.length;
+  const activeMat = isCustomMat ? customMat : MATERIALS[matIdx];
+  const sensor = sensMode === 'custom' ? customSensor : SENSOR_PRESETS[sensIdx];
+  const bead = beadMode === 'custom' ? customBead : BEAD_LIBRARY[beadIdx];
+
+  function onVarChange(idx) {
+    setSweepVar(idx);
+    const sv = SWEEP_VARS[idx];
+    if (sv.id === 'gate_voltage' && activeMat.gate) {
+      setSweepMin(activeMat.gate.Vg_range[0]);
+      setSweepMax(activeMat.gate.Vg_range[1]);
+    } else {
+      setSweepMin(sv.min);
+      setSweepMax(sv.max);
+    }
+    setSweepSteps(sv.steps);
+  }
+
+  function runSweep() {
+    setSweepState('running'); setSweepProgress(0);
+    const sv = SWEEP_VARS[sweepVar];
+    const materialsToRun = compareMode ? MATERIALS : [activeMat];
+    const results = [];
+    const totalSteps = sweepSteps * materialsToRun.length;
+    let done = 0;
+
+    // Build parameter values array
+    const paramValues = [];
+    for (let i = 0; i <= sweepSteps; i++) {
+      paramValues.push(sweepMin + (sweepMax - sweepMin) * i / sweepSteps);
+    }
+
+    for (const mat of materialsToRun) {
+      const matResult = {material: mat.name || 'Custom', color: mat.color || '#94a3b8', points: []};
+
+      for (const pv of paramValues) {
+        // Build config for this sweep step
+        let bd = bead.d, mu_r = bead.mu_r, sSize = sensor.size, sT = sensor.t;
+        let b0 = B0 * 1e-3, vb = vBias, dist = fixedHeight * 1e-6;
+        let cH = chH * 1e-6, fv = flowVel * 1e-3, thr = threshold;
+        let sweepVg = Vg; // use current gate voltage
+
+        // Override the swept variable
+        if (sv.id === 'bead_d') bd = sv.toSI(pv);
+        else if (sv.id === 'sensor_size') { sSize = sv.toSI(pv); sT = sSize < 8e-6 ? 0.5e-6 : 1e-6; }
+        else if (sv.id === 'flow_vel') fv = sv.toSI(pv);
+        else if (sv.id === 'B0') b0 = sv.toSI(pv);
+        else if (sv.id === 'ch_height') cH = sv.toSI(pv);
+        else if (sv.id === 'distance') dist = sv.toSI(pv);
+        else if (sv.id === 'gate_voltage') sweepVg = sv.toSI(pv);
+
+        const mp = computeMatProps(mat, sweepVg);
+        const r_b = bd / 2;
+        const mom = beadMoment(r_b, mu_r, b0);
+
+        // Single bead at center: peak voltage
+        const peakBz = volumeAvgBz(mom, 0, 0, dist, sSize, sT, 8, 2);
+        const peakVH = Math.abs(mp.RH * mp.sigma * peakBz * vb) * 1000; // mV
+
+        // Batch: N=20 beads at random heights for detection rate
+        const N_BATCH = 20;
+        let nDet = 0;
+        for (let bi = 0; bi < N_BATCH; bi++) {
+          const hMin = r_b + 0.5e-6;
+          const hMax = Math.min(cH * 0.8, 30e-6);
+          const y = hMin + Math.random() * Math.max(0, hMax - hMin);
+          const Bz_batch = volumeAvgBz(mom, 0, 0, y, sSize, sT, 6, 1);
+          const dvh_batch = Math.abs(mp.RH * mp.sigma * Bz_batch * vb) * 1000;
+          if (dvh_batch > thr) nDet++;
+        }
+
+        matResult.points.push({
+          param: pv, peakVH, detRate: (nDet / N_BATCH) * 100
+        });
+        done++;
+      }
+      results.push(matResult);
+    }
+
+    setSweepData({variable: sv, results, paramValues});
+    setSweepProgress(100);
+    setSweepState('done');
+  }
+
+  // Draw charts when data changes
+  useEffect(() => {
+    if (!sweepData) return;
+    drawChart1(); drawChart2();
+  }, [sweepData]);
+
+  // Resize handler for charts
+  useEffect(() => {
+    const handler = () => { if (sweepData) { drawChart1(); drawChart2(); }};
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, [sweepData]);
+
+  function drawChart1() {
+    const canvas = chart1Ref.current, cont = chart1ContRef.current;
+    if (!canvas || !cont || !sweepData) return;
+    const W = cont.clientWidth - 32, H = Math.max(280, W * 0.42);
+    const axFS1 = chartFS(W,'axisLabel'), tkFS1 = chartFS(W,'tickValue');
+    const yLblW1 = axFS1 + 6, tkW1 = Math.round(tkFS1 * 4.2);
+    const padL = yLblW1 + tkW1 + 8;
+    const padB = Math.round(18 + axFS1 * 2.2);
+    canvas.width = W * 2; canvas.height = H * 2; canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0);
+    const pad = {top:20, bottom:padB, left:padL, right:24};
+    const dW = W - pad.left - pad.right, dH = H - pad.top - pad.bottom;
+
+    let maxV = 0;
+    for (const r of sweepData.results) for (const p of r.points) if (p.peakVH > maxV) maxV = p.peakVH;
+    maxV = maxV * 1.15 || 1;
+
+    // Grid + Y tick values
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 5; i++) {
+      const py = pad.top + dH * (1 - i / 5);
+      ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(pad.left + dW, py); ctx.stroke();
+      ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'right';
+      ctx.fillText((maxV * i / 5).toFixed(maxV < 1 ? 3 : maxV < 10 ? 2 : 1), pad.left - 6, py + 4);
+    }
+
+    // Data lines
+    for (const r of sweepData.results) {
+      ctx.strokeStyle = r.color; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let i = 0; i < r.points.length; i++) {
+        const px = pad.left + dW * (i / (r.points.length - 1));
+        const py = pad.top + dH * (1 - Math.min(r.points[i].peakVH / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 0.08; ctx.lineWidth = 8; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = r.color;
+      for (let i = 0; i < r.points.length; i++) {
+        const px = pad.left + dW * (i / (r.points.length - 1));
+        const py = pad.top + dH * (1 - Math.min(r.points[i].peakVH / maxV, 1));
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // Axis labels (responsive)
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS1 + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText(sweepData.variable.name + ' (' + sweepData.variable.unit + ')', pad.left + dW / 2, H - 6);
+    ctx.save(); ctx.translate(Math.round(yLblW1 / 2), pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Peak \u0394V\u2095 (mV)', 0, 0); ctx.restore();
+    // X ticks
+    ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
+    const nTicks = Math.min(sweepData.paramValues.length, 8);
+    for (let i = 0; i < nTicks; i++) {
+      const idx = Math.round(i * (sweepData.paramValues.length - 1) / (nTicks - 1));
+      const v = sweepData.paramValues[idx];
+      ctx.fillText(v < 0.1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v), pad.left + dW * (idx / (sweepData.paramValues.length - 1)), pad.top + dH + chartFS(W,'tickValue') + 4);
+    }
+  }
+
+  function drawChart2() {
+    const canvas = chart2Ref.current, cont = chart2ContRef.current;
+    if (!canvas || !cont || !sweepData) return;
+    const W = cont.clientWidth - 32, H = Math.max(280, W * 0.42);
+    const axFS2 = chartFS(W,'axisLabel'), tkFS2 = chartFS(W,'tickValue');
+    const yLblW2 = axFS2 + 6, tkW2 = Math.round(tkFS2 * 4.2);
+    const padL = yLblW2 + tkW2 + 8;
+    const padB = Math.round(18 + axFS2 * 2.2);
+    canvas.width = W * 2; canvas.height = H * 2; canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0);
+    const pad = {top:20, bottom:padB, left:padL, right:24};
+    const dW = W - pad.left - pad.right, dH = H - pad.top - pad.bottom;
+
+    // Grid (0-100%)
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 5; i++) {
+      const py = pad.top + dH * (1 - i / 5);
+      ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(pad.left + dW, py); ctx.stroke();
+      ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'right';
+      ctx.fillText(Math.round(i * 20) + '%', pad.left - 6, py + 4);
+    }
+
+    // Threshold line at 100%
+    const y100 = pad.top;
+    ctx.strokeStyle = 'rgba(34,197,94,0.2)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.left, y100); ctx.lineTo(pad.left + dW, y100); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Data lines
+    for (const r of sweepData.results) {
+      ctx.strokeStyle = r.color; ctx.lineWidth = 2.5; ctx.beginPath();
+      for (let i = 0; i < r.points.length; i++) {
+        const px = pad.left + dW * (i / (r.points.length - 1));
+        const py = pad.top + dH * (1 - r.points[i].detRate / 100);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 0.08; ctx.lineWidth = 8; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.04; ctx.fillStyle = r.color; ctx.beginPath();
+      for (let i = 0; i < r.points.length; i++) {
+        const px = pad.left + dW * (i / (r.points.length - 1));
+        const py = pad.top + dH * (1 - r.points[i].detRate / 100);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.lineTo(pad.left + dW, pad.top + dH); ctx.lineTo(pad.left, pad.top + dH); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = r.color;
+      for (let i = 0; i < r.points.length; i++) {
+        const px = pad.left + dW * (i / (r.points.length - 1));
+        const py = pad.top + dH * (1 - r.points[i].detRate / 100);
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // Axis labels (responsive)
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS2 + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText(sweepData.variable.name + ' (' + sweepData.variable.unit + ')', pad.left + dW / 2, H - 6);
+    ctx.save(); ctx.translate(Math.round(yLblW2 / 2), pad.top + dH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Detection Rate (%)', 0, 0); ctx.restore();
+    ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
+    const nTicks = Math.min(sweepData.paramValues.length, 8);
+    for (let i = 0; i < nTicks; i++) {
+      const idx = Math.round(i * (sweepData.paramValues.length - 1) / (nTicks - 1));
+      const v = sweepData.paramValues[idx];
+      ctx.fillText(v < 0.1 ? v.toFixed(2) : v < 10 ? v.toFixed(1) : Math.round(v), pad.left + dW * (idx / (sweepData.paramValues.length - 1)), pad.top + dH + chartFS(W,'tickValue') + 4);
+    }
+  }
+
+  function exportSweepCSV() {
+    if (!sweepData) return;
+    const sv = sweepData.variable;
+    const headers = [sv.name + ' (' + sv.unit + ')'];
+    for (const r of sweepData.results) {
+      headers.push(r.material + ' Peak_DVH (mV)');
+      headers.push(r.material + ' Detection_Rate (%)');
+    }
+    const rows = sweepData.paramValues.map((pv, i) => {
+      const row = [pv];
+      for (const r of sweepData.results) {
+        row.push(r.points[i].peakVH.toFixed(6));
+        row.push(r.points[i].detRate.toFixed(1));
+      }
+      return row;
+    });
+    downloadCSV('uflow_sweep_' + sv.id + '.csv', headers, rows);
+  }
+
+  const sv = SWEEP_VARS[sweepVar];
+
+  return h('div', {className:'analysis-wrap'},
+    h('div', {className:'analysis-title'}, 'Parametric Sweep Analysis'),
+    h('div', {className:'analysis-subtitle'}, 'Sweep a single parameter across a range to study its effect on Hall voltage and detection performance.'),
+
+    h('div', {className:'sweep-config'},
+      // Config card
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), 'Sweep Configuration'),
+        h('div', {style:{marginBottom:'8px'}},
+          h('label', {style:{fontSize:'10px',color:'var(--muted)',display:'block',marginBottom:'3px'}}, 'SWEEP VARIABLE'),
+          h('select', {className:'sweep-select', value:sweepVar, onChange:e=>onVarChange(+e.target.value)},
+            SWEEP_VARS.map((sv, i) => h('option', {key:i, value:i}, sv.name + ' (' + sv.unit + ')'))
+          ),
+        ),
+        h('div', {className:'sweep-range-row'},
+          h('div', null,
+            h('label', null, 'Min'),
+            h('input', {type:'number', value:sweepMin, step:'any', onChange:e=>setSweepMin(+e.target.value)}),
+          ),
+          h('div', null,
+            h('label', null, 'Max'),
+            h('input', {type:'number', value:sweepMax, step:'any', onChange:e=>setSweepMax(+e.target.value)}),
+          ),
+          h('div', null,
+            h('label', null, 'Steps'),
+            h('input', {type:'number', value:sweepSteps, min:3, max:100, onChange:e=>setSweepSteps(+e.target.value)}),
+          ),
+        ),
+        h('div', {className:'compare-toggle'},
+          h('input', {type:'checkbox', id:'cmp', checked:compareMode, onChange:e=>setCompareMode(e.target.checked)}),
+          h('label', {htmlFor:'cmp'}, 'Compare all materials'),
+        ),
+        compareMode && h('div', {className:'mat-legend'},
+          MATERIALS.map(m => h('div', {key:m.id, className:'mat-legend-item'},
+            h('span', {className:'swatch', style:{background:m.color}}),
+            m.name
+          ))
+        ),
+        h('div', {className:'sweep-actions'},
+          h('button', {className:'sweep-btn run', disabled:sweepState==='running', onClick:runSweep}, sweepState === 'done' ? '\u21bb Re-run Sweep' : '\u25b6 Run Sweep'),
+          h('button', {className:'sweep-btn export', disabled:!sweepData, onClick:exportSweepCSV}, '\u2913 Export CSV'),
+        ),
+        sweepState === 'running' && h('div', {className:'sweep-progress'},
+          h('div', {className:'sweep-progress-bar', style:{width:sweepProgress+'%'}})
+        ),
+      ),
+
+      // Current config card
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), 'Base Configuration'),
+        h('table', {className:'props-table'},
+          h('tbody', null,
+            h('tr',null, h('td',null,'Material'), h('td',null, isCustomMat ? 'Custom' : activeMat.name)),
+            h('tr',null, h('td',null,'Sensor'), h('td',null, (sensor.size*1e6).toFixed(1)+' \u00d7 '+(sensor.size*1e6).toFixed(1)+' \u00b5m')),
+            h('tr',null, h('td',null,'Bead'), h('td',null, beadMode==='custom' ? (customBead.d*1e6).toFixed(1)+' \u00b5m' : bead.name)),
+            h('tr',null, h('td',null,'B\u2080'), h('td',null, B0+' mT')),
+            h('tr',null, h('td',null,'V\u2090\u1d62\u2090\u209b'), h('td',null, vBias+' V')),
+            h('tr',null, h('td',null,'Channel H'), h('td',null, chH+' \u00b5m')),
+            h('tr',null, h('td',null,'Flow v\u0304'), h('td',null, flowVel+' mm/s')),
+            h('tr',null, h('td',null,'Height above sensor'), h('td',null, fixedHeight+' \u00b5m')),
+            h('tr',null, h('td',null,'Threshold'), h('td',null, threshold+' mV')),
+          )
+        ),
+        h('div', {className:'note', style:{marginTop:'8px'}}, 'Parameters not being swept use these base values. Change them in the Simulator or Designer page.'),
+      ),
+    ),
+
+    // Charts
+    sweepData && h('div', {className:'chart-grid'},
+      h('div', {className:'chart-card', ref:chart1ContRef},
+        h('div', {className:'chart-title volt'}, 'Peak Hall Voltage vs. ' + sweepData.variable.name),
+        h('canvas', {ref:chart1Ref}),
+      ),
+      h('div', {className:'chart-card', ref:chart2ContRef},
+        h('div', {className:'chart-title det'}, 'Detection Rate vs. ' + sweepData.variable.name),
+        h('canvas', {ref:chart2Ref}),
+      ),
+    ),
+
+    // Results table
+    sweepData && h('div', {className:'sweep-results'},
+      h('div', {className:'d-card-title', style:{marginBottom:'8px'}}, h('span',{className:'dot',style:{background:'var(--primary)'}}), 'Sweep Results'),
+      h('table', null,
+        h('thead', null, h('tr', null,
+          h('th', null, sweepData.variable.name + ' (' + sweepData.variable.unit + ')'),
+          ...sweepData.results.flatMap(r => [
+            h('th', {key:r.material+'v', style:{color:r.color}}, (sweepData.results.length > 1 ? r.material + ' ' : '') + 'Peak \u0394V\u2095 (mV)'),
+            h('th', {key:r.material+'d', style:{color:r.color}}, (sweepData.results.length > 1 ? r.material + ' ' : '') + 'Det. %'),
+          ])
+        )),
+        h('tbody', null, sweepData.paramValues.map((pv, i) =>
+          h('tr', {key:i},
+            h('td', null, pv < 0.1 ? pv.toFixed(3) : pv < 10 ? pv.toFixed(2) : pv.toFixed(1)),
+            ...sweepData.results.flatMap(r => [
+              h('td', {key:r.material+'v'+i, className: r.points[i].peakVH > threshold ? 'highlight' : ''},
+                r.points[i].peakVH < 0.001 ? r.points[i].peakVH.toExponential(2) : r.points[i].peakVH.toFixed(3)),
+              h('td', {key:r.material+'d'+i, style:{color: r.points[i].detRate >= 90 ? '#22c55e' : r.points[i].detRate >= 50 ? '#f59e0b' : '#ef4444'}},
+                r.points[i].detRate.toFixed(0) + '%'),
+            ])
+          )
+        ))
+      ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INTRO / LANDING PAGE
+// ══════════════════════════════════════════════════════════════════════════════
+function IntroPage({onEnter}) {
+  return h('div', {className:'intro-wrap'},
+    h('div', {className:'intro-logo'}, h('span', {className:'mu'}, '\u00B5'), 'Flow'),
+    h('div', {className:'intro-tagline'}, '3D Microfluidic Hall-Effect Sensor Simulator'),
+    h('div', {className:'intro-desc'},
+      'A browser-based simulation platform for designing and optimizing microfluidic Hall-effect biosensors. ' +
+      'Model bead magnetization, stray fields, Poiseuille flow, and Hall voltage response \u2014 all in real time with interactive 3D visualization.'
+    ),
+    h('div', {className:'intro-features'},
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\u25B6'),
+        h('div', {className:'intro-feat-title'}, '3D Simulator'),
+        h('div', {className:'intro-feat-sub'}, 'Real-time bead transport with Three.js visualization and live signal trace')
+      ),
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\u2699'),
+        h('div', {className:'intro-feat-title'}, 'Device Designer'),
+        h('div', {className:'intro-feat-sub'}, '12 sensor materials, 8 bead presets, full parametric control')
+      ),
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\uD83D\uDCCA'),
+        h('div', {className:'intro-feat-title'}, 'Parametric Sweeps'),
+        h('div', {className:'intro-feat-sub'}, 'Batch analysis with auto-generated charts and CSV export')
+      ),
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\uD83D\uDCD6'),
+        h('div', {className:'intro-feat-title'}, 'Physics Reference'),
+        h('div', {className:'intro-feat-sub'}, 'Complete equations, material tables, and literature citations')
+      ),
+      h('div', {className:'intro-feat'},
+        h('span', {className:'intro-feat-icon'}, '\uD83D\uDD2C'),
+        h('div', {className:'intro-feat-title'}, 'FEM Solver'),
+        h('div', {className:'intro-feat-sub'}, '2D axisymmetric finite element validation with live field visualization')
+      ),
+    ),
+    h('button', {className:'intro-enter', onClick: onEnter}, 'Launch Simulator \u2192'),
+    h('div', {className:'intro-stats'},
+      h('div', {className:'intro-stat'},
+        h('div', {className:'intro-stat-num'}, '12'),
+        h('div', {className:'intro-stat-label'}, 'Materials'),
+      ),
+      h('div', {className:'intro-stat'},
+        h('div', {className:'intro-stat-num'}, '8'),
+        h('div', {className:'intro-stat-label'}, 'Bead Presets'),
+      ),
+      h('div', {className:'intro-stat'},
+        h('div', {className:'intro-stat-num'}, '5'),
+        h('div', {className:'intro-stat-label'}, 'Physics Modules'),
+      ),
+      h('div', {className:'intro-stat'},
+        h('div', {className:'intro-stat-num'}, '0'),
+        h('div', {className:'intro-stat-label'}, 'Install Required'),
+      ),
+    ),
+    h('div', {className:'intro-footer'},
+      '\u00A9 2025 Govindaraju & Hassan. All rights reserved.',
+      h('br'),
+      'Advances in Engineering Software \u00B7 Contact: ',
+      h('a', {href:'mailto:harshitha.g@rutgers.edu'}, 'harshitha.g@rutgers.edu'),
+    ),
+  );
+}
+
+// THEORY PAGE — PHYSICS REFERENCE
+// ══════════════════════════════════════════════════════════════════════════════
+function TheoryPage() {
+  const EQ = (main, params, ref) => h('div', {className:'theory-eq-block'},
+    h('div', {className:'theory-eq-main'}, main),
+    params && h('div', {className:'theory-eq-params'}, params),
+    ref && h('div', {className:'theory-eq-ref'}, ref),
+  );
+
+  return h('div', {className:'theory-wrap'},
+    h('div', {className:'theory-h1'}, '\u00B5Flow Physics Reference'),
+    h('div', {className:'theory-sub'}, 'Complete mathematical formulation underlying the simulator. All equations are evaluated in real time during bead transport simulation.'),
+
+    // 1. Bead Magnetization
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 mag'}, 'Bead Magnetization'),
+      h('div', {className:'theory-p'}, 'Superparamagnetic beads are modeled as homogeneous spheres with effective magnetic susceptibility derived from the Clausius\u2013Mossotti relation. The induced dipole moment scales with bead volume and applied field.'),
+      EQ(
+        '\u03c7\u2091\u1da0\u1da0 = 3(\u03bc\u1d63 \u2212 1) / (\u03bc\u1d63 + 2)',
+        h(React.Fragment, null,
+          h('span',null,'\u03bc\u1d63'), ' = relative permeability of bead material (dimensionless)',
+          h('br'), h('span',null,'\u03c7\u2091\u1da0\u1da0'), ' = effective susceptibility via Clausius\u2013Mossotti mixing rule',
+          h('br'), 'Typical: \u03bc\u1d63 = 10 \u2192 \u03c7\u2091\u1da0\u1da0 = 2.25 (Fe\u2083O\u2084/polymer composite)',
+        ),
+        'Fonnum et al., J. Magn. Magn. Mater. 293 (2005) 41\u201347'
+      ),
+      EQ(
+        'm = (4/3)\u03c0r\u00b3 \u00b7 \u03c7\u2091\u1da0\u1da0 \u00b7 B\u2080 / \u03bc\u2080',
+        h(React.Fragment, null,
+          h('span',null,'r'), ' = bead radius (m)',
+          h('br'), h('span',null,'B\u2080'), ' = applied magnetic field from Halbach array (T)',
+          h('br'), h('span',null,'\u03bc\u2080'), ' = 4\u03c0 \u00d7 10\u207b\u2077 H/m (vacuum permeability)',
+          h('br'), h('span',null,'m'), ' = induced magnetic dipole moment (A\u00b7m\u00b2)',
+        ),
+        'Griffiths, Introduction to Electrodynamics, 4th ed. (2013)'
+      ),
+    ),
+
+    // 2. Stray Field
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 field'}, 'Stray Magnetic Field'),
+      h('div', {className:'theory-p'}, 'The magnetized bead produces a stray field modeled as a point dipole. Only the z-component (perpendicular to the sensor plane) contributes to the Hall voltage.'),
+      EQ(
+        'B\u1dbb(dx, dy, dz) = (\u03bc\u2080/4\u03c0) \u00b7 m \u00b7 (2dz\u00b2 \u2212 dx\u00b2 \u2212 dy\u00b2) / r\u2075',
+        h(React.Fragment, null,
+          h('span',null,'(dx, dy, dz)'), ' = displacement from bead center to field point',
+          h('br'), h('span',null,'r'), ' = \u221a(dx\u00b2 + dy\u00b2 + dz\u00b2)',
+          h('br'), 'Singularity at r = 0 is protected by minimum distance cutoff',
+        ),
+        'Jackson, Classical Electrodynamics, 3rd ed. (1999) \u00a7 5.6'
+      ),
+    ),
+
+    // 3. Volume-Averaged Hall Voltage
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 hall'}, 'Volume-Averaged Hall Voltage'),
+      h('div', {className:'theory-p'}, 'The Hall voltage is computed by numerically integrating the stray field over the sensor active volume, then applying the Hall effect relation with material-specific transport properties.'),
+      EQ(
+        '\u27e8B\u1dbb\u27e9 = (1/V) \u222b\u222b\u222b B\u1dbb(x, y, z) dV',
+        h(React.Fragment, null,
+          'Numerical integration: N\u2093\u2099 \u00d7 N\u2093\u2099 \u00d7 N\u1dbb midpoint rule over sensor volume',
+          h('br'), h('span',null,'V'), ' = w \u00d7 w \u00d7 t (sensor volume, square cross-section)',
+          h('br'), 'Default grid: 10\u00d710\u00d73 = 300 evaluation points',
+        ),
+        'Besse et al., Appl. Phys. Lett. 80 (2002) 4199\u20134201'
+      ),
+      EQ(
+        '\u0394V\u2095 = R\u2095 \u00b7 \u03c3 \u00b7 \u27e8B\u1dbb\u27e9 \u00b7 V\u2090\u1d62\u2090\u209b',
+        h(React.Fragment, null,
+          h('span',null,'R\u2095'), ' = 1/(n\u00b7e) = Hall coefficient (m\u00b2/C for 2D, m\u00b3/C for 3D)',
+          h('br'), h('span',null,'\u03c3'), ' = n\u00b7e\u00b7\u03bc = conductivity (S/m)',
+          h('br'), h('span',null,'V\u2090\u1d62\u2090\u209b'), ' = bias voltage across sensor (V)',
+          h('br'), h('span',null,'n'), ' = carrier density, ', h('span',null,'\u03bc'), ' = carrier mobility, ', h('span',null,'e'), ' = 1.602 \u00d7 10\u207b\u00b9\u2079 C',
+        ),
+        'Popovic, Hall Effect Devices, 2nd ed. (2004)'
+      ),
+    ),
+
+    // 4. Poiseuille Flow
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 flow'}, 'Poiseuille Flow Profile'),
+      h('div', {className:'theory-p'}, 'Bead transport through the microfluidic channel follows a parabolic Poiseuille velocity profile. Beads near the channel center travel faster than those near the walls.'),
+      EQ(
+        'v(y) = 1.5 \u00b7 v\u0304 \u00b7 [1 \u2212 ((2y/H) \u2212 1)\u00b2]',
+        h(React.Fragment, null,
+          h('span',null,'v\u0304'), ' = mean flow velocity (m/s)',
+          h('br'), h('span',null,'H'), ' = channel height (m)',
+          h('br'), h('span',null,'y'), ' = vertical position (0 = bottom wall, H = top wall)',
+          h('br'), 'Maximum velocity at centerline: v\u2098\u2090\u2093 = 1.5 \u00b7 v\u0304',
+        ),
+        'Bruus, Theoretical Microfluidics (2007) \u00a7 3.4'
+      ),
+      EQ(
+        'Q = v\u0304 \u00b7 w \u00b7 H',
+        h(React.Fragment, null,
+          h('span',null,'Q'), ' = volumetric flow rate (m\u00b3/s)',
+          h('br'), h('span',null,'w'), ' = channel width (taken as sensor width)',
+        ),
+        null
+      ),
+    ),
+
+    // 5. Detection Criteria
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 det'}, 'Detection Criteria'),
+      h('div', {className:'theory-p'}, 'A bead is classified as detected when its Hall voltage pulse exceeds a user-defined threshold. The detection rate is the fraction of beads in a batch that exceed this threshold.'),
+      EQ(
+        'Detected if: max[\u0394V\u2095(t)] > V\u209c\u2095\u2093\u2091\u209b\u2095',
+        h(React.Fragment, null,
+          'Each bead traverses the sensor zone and generates a bipolar voltage pulse',
+          h('br'), 'Peak occurs when bead is directly above sensor center (x = 0)',
+          h('br'), h('span',null,'V\u209c\u2095\u2093\u2091\u209b\u2095'), ' typically set to 3\u00d7 noise RMS for SNR > 3',
+        ),
+        'Shah et al., Microsyst. Nanoeng. 9 (2023) 117'
+      ),
+    ),
+
+    // 6. Gate-Tunable 2D Materials
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 hall'}, 'Gate-Tunable Carrier Density'),
+      h('div', {className:'theory-p'}, 'For 2D Hall sensors on gated substrates, the carrier density n is modulated by the gate voltage V\u1d33. This enables in-situ tuning of R\u2095 and \u03c3 to optimize sensitivity for a given bead size and field strength.'),
+      EQ(
+        'n(V\u1d33) = \u221a(n\u1d63\u2091\u209b\u00b2 + n\u1d33\u2090\u209c\u2091\u00b2)',
+        h(React.Fragment, null,
+          h('span',null,'n\u1d33\u2090\u209c\u2091'), ' = C\u2092\u2093 \u00b7 |V\u1d33 \u2212 V\u0043\u004e\u0050| / e',
+          h('br'), h('span',null,'n\u1d63\u2091\u209b'), ' = residual carrier density at charge neutrality (m\u207b\u00b2)',
+          h('br'), h('span',null,'V\u0043\u004e\u0050'), ' = charge neutrality point voltage (V)',
+          h('br'), 'Smooth crossover avoids singularity at V\u1d33 = V\u0043\u004e\u0050',
+        ),
+        'Das Sarma et al., Rev. Mod. Phys. 83 (2011) 407\u2013470'
+      ),
+      EQ(
+        'C\u2092\u2093 = \u03b5\u2080 \u00b7 \u03b5\u1d63 / d\u2092\u2093',
+        h(React.Fragment, null,
+          h('span',null,'\u03b5\u1d63'), ' = relative permittivity of gate oxide',
+          h('br'), h('span',null,'d\u2092\u2093'), ' = oxide thickness (m)',
+          h('br'), 'SiO\u2082: \u03b5\u1d63 = 3.9, hBN: \u03b5\u1d63 = 3.5, Al\u2082O\u2083: \u03b5\u1d63 = 9.5',
+          h('br'), 'Typical: 285 nm SiO\u2082 \u2192 C\u2092\u2093 = 1.21 \u00d7 10\u207b\u2074 F/m\u00b2',
+        ),
+        'Novoselov et al., Science 306 (2004) 666\u2013669'
+      ),
+      h('div', {className:'theory-p', style:{fontSize:'11px',color:'var(--muted)',marginTop:'8px'}},
+        'Gate-tunable materials: ' + MATERIALS.filter(m => m.gate).map(m => m.name).join(', ') + '. Non-gated materials (bulk 3D, epitaxial) use fixed carrier density.'
+      ),
+    ),
+
+    // Material Properties Table
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 mat'}, 'Hall Sensor Material Library'),
+      h('div', {className:'theory-table-wrap'},
+        h('table', {className:'theory-table'},
+          h('thead', null, h('tr', null,
+            h('th', null, 'Material'), h('th', null, 'Type'),
+            h('th', null, '\u03bc (cm\u00b2/Vs)'), h('th', null, 'n (m\u207b\u00b2/\u00b3)'),
+            h('th', null, 'R\u2095'), h('th', null, '\u03c3 (S/m)'),
+            h('th', null, 'Gate'), h('th', null, 'Reference'),
+          )),
+          h('tbody', null, MATERIALS.map(m => {
+            const mp = computeMatProps(m);
+            return h('tr', {key:m.id},
+              h('td', {style:{color:m.color}}, m.name),
+              h('td', {className:'mono'}, m.dim),
+              h('td', {className:'mono'}, m.mu.toLocaleString()),
+              h('td', {className:'mono'}, m.n.toExponential(0)),
+              h('td', {className:'mono accent'}, fmtSci(mp.RH)),
+              h('td', {className:'mono accent'}, fmtSci(mp.sigma)),
+              h('td', {className:'mono'}, m.gate ? '\u2713 '+m.gate.Vg_range[0]+'..'+m.gate.Vg_range[1]+'V' : '\u2014'),
+              h('td', null, m.ref),
+            );
+          }))
+        )
+      ),
+    ),
+
+    // Bead Library Table
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 mag'}, 'Magnetic Bead Library'),
+      h('div', {className:'theory-table-wrap'},
+        h('table', {className:'theory-table'},
+          h('thead', null, h('tr', null,
+            h('th', null, 'Bead'), h('th', null, 'Diameter'),
+            h('th', null, '\u03bc\u1d63'), h('th', null, '\u03c7\u2091\u1da0\u1da0'),
+            h('th', null, 'm at 100 mT'), h('th', null, 'Vendor'),
+          )),
+          h('tbody', null, BEAD_LIBRARY.map(b => {
+            const chi = 3*(b.mu_r-1)/(b.mu_r+2);
+            const mom = beadMoment(b.d/2, b.mu_r, 0.1);
+            return h('tr', {key:b.id},
+              h('td', null, b.name),
+              h('td', {className:'mono'}, b.label),
+              h('td', {className:'mono'}, b.mu_r),
+              h('td', {className:'mono accent'}, chi.toFixed(3)),
+              h('td', {className:'mono accent'}, fmtSci(mom) + ' A\u00b7m\u00b2'),
+              h('td', null, b.ref),
+            );
+          }))
+        )
+      ),
+    ),
+
+    // References
+    h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 ref'}, 'Key References'),
+      h('ol', {className:'theory-ref-list'},
+        h('li', null, h('strong',null,'Govindaraju & Hassan'), ', "Graphene Hall Sensor Lab," ', h('em',null,'Sensors & Actuators: A. Physical'), ' 393 (2025) 116293.'),
+        h('li', null, h('strong',null,'Shah et al.'), ', "Ultra-sensitive Hall sensors for magnetic bead detection in microfluidics," ', h('em',null,'Microsyst. Nanoeng.'), ' 9 (2023) 117.'),
+        h('li', null, h('strong',null,'Besse et al.'), ', "Detection of a single magnetic microbead using a miniaturized silicon Hall sensor," ', h('em',null,'Appl. Phys. Lett.'), ' 80 (2002) 4199\u20134201.'),
+        h('li', null, h('strong',null,'Aledealat et al.'), ', "Micro-Hall devices for detection of superparamagnetic beads," ', h('em',null,'J. Magn. Magn. Mater.'), ' 322 (2010) 1665.'),
+        h('li', null, h('strong',null,'Dauber et al.'), ', "Ultra-sensitive Hall sensors based on graphene encapsulated in hexagonal boron nitride," ', h('em',null,'Appl. Phys. Lett.'), ' 106 (2015) 193501.'),
+        h('li', null, h('strong',null,'Xu et al.'), ', "Flicker noise and magnetic resolution of graphene Hall sensors at low frequency," ', h('em',null,'Appl. Phys. Lett.'), ' 103 (2013) 112405.'),
+        h('li', null, h('strong',null,'Gabureac et al.'), ', "Single superparamagnetic bead detection and direct tracing of bead position using a nano-Hall sensor," ', h('em',null,'Nanotechnology'), ' 24 (2013) 275501.'),
+        h('li', null, h('strong',null,'Togawa et al.'), ', "High-Sensitivity InSb Thin-Film Micro-Hall Sensor Arrays for Simultaneous Multiple Detection of Magnetic Beads for Biomedical Applications," ', h('em',null,'IEEE Trans. Magn.'), ' 41 (2005) 3661.'),
+        h('li', null, h('strong',null,'Fonnum et al.'), ', "Characterisation of Dynabeads by magnetization measurements and M\u00f6ssbauer spectroscopy," ', h('em',null,'J. Magn. Magn. Mater.'), ' 293 (2005) 41\u201347.'),
+
+        h('li', null, h('strong',null,'Ciuk et al.'), ', "High-Temperature Hall Effect Sensor Based on Epitaxial Graphene on High-Purity Semiinsulating 4H-SiC," ', h('em',null,'IEEE Trans. Electron Devices'), ' 66 (2019) 3134.'),
+        h('li', null, h('strong',null,'Zhang et al.'), ', "AlGaN/GaN magnetic sensors featuring heterojunction 2DEG channel," ', h('em',null,'Meas. Sci. Technol.'), ' 32 (2021) 115114.'),
+        h('li', null, h('strong',null,'Kunets et al.'), ', "InSb Quantum-Well-Based Micro-Hall Devices: Potential for pT Detectivity," ', h('em',null,'IEEE Trans. Electron Devices'), ' 56 (2009) 683.'),
+        h('li', null, h('strong',null,'Boero et al.'), ', "Micro-Hall devices: performance, technologies and applications," ', h('em',null,'Sens. Actuators A'), ' 106 (2003) 314.'),
+        h('li', null, h('strong',null,'Mihajlovic et al.'), ', "Detection of single magnetic bead for biological applications using an InAs quantum-well micro-Hall sensor," ', h('em',null,'Appl. Phys. Lett.'), ' 87 (2005) 112502.'),
+        h('li', null, h('strong',null,'Saeed et al.'), ', "Synthesis of 2D Ternary TI Bi\u2082\u208b\u2093Sb\u2093Se\u2083 with Ultrahigh Carrier Mobility," ', h('em',null,'Adv. Funct. Mater.'), ' 34 (2024) 2312999.'),
+        h('li', null, h('strong',null,'Komnik & Andrievskii'), ', "Kinetic properties of bismuth thin films," ', h('em',null,'Sov. Phys. JETP'), ' 40 (1975) 164.'),
+        h('li', null, h('strong',null,'Huang et al.'), ', "Ultra-sensitive graphene Hall elements," ', h('em',null,'Appl. Phys. Lett.'), ' 104 (2014) 183106.'),
+        h('li', null, h('strong',null,'Ouaj et al.'), ', "Benchmarking the integration of hexagonal boron nitride crystals and films for graphene van der Waals heterostructure Hall devices," ', h('em',null,'2D Mater.'), ' 12 (2025) 015017.'),
+        h('li', null, h('strong',null,'Panchal et al.'), ', "Surface Potential Variations in Epitaxial Graphene Devices Investigated by Electrostatic Force Spectroscopy," ', h('em',null,'Proc. IEEE-NANO'), ' (2012).'),
+        h('li', null, h('strong',null,'Haned & Missous'), ', "Nano-tesla magnetic field magnetometry using an InGaAs\u2013AlGaAs\u2013GaAs 2DEG Hall sensor," ', h('em',null,'Sens. Actuators A'), ' 102 (2003) 216.'),
+        h('li', null, h('strong',null,'Okamoto & Shibasaki'), ', "Transport properties of Sn-doped InSb thin films and applications to Hall element," ', h('em',null,'J. Cryst. Growth'), ' 251 (2003) 560.'),
+        h('li', null, h('strong',null,'Heremans'), ', "Solid state magnetic field sensors and applications," ', h('em',null,'J. Phys. D: Appl. Phys.'), ' 26 (1993) 1149.'),
+        h('li', null, h('strong',null,'Kunets et al.'), ', "Low thermal drift in highly sensitive doped channel Al\u2080.\u2083Ga\u2080.\u2087As/GaAs/In\u2080.\u2082Ga\u2080.\u2088As micro-Hall element," ', h('em',null,'J. Mater. Sci.: Mater. Electron.'), ' 19 (2008) 776.'),
+        h('li', null, h('strong',null,'Koide et al.'), ', "High Temperature Hall sensors using AlGaN/GaN HEMT Structures," ', h('em',null,'J. Phys.: Conf. Ser.'), ' 352 (2012) 012009.'),
+        h('li', null, h('strong',null,'Gilbertson et al.'), ', "Room temperature ballistic transport in InSb quantum well nanodevices," ', h('em',null,'Appl. Phys. Lett.'), ' 99 (2011) 242101.'),
+        h('li', null, h('strong',null,'Koirala et al.'), ', "Record Surface State Mobility and Quantum Hall Effect in Topological Insulator Thin Films via Interface Engineering," ', h('em',null,'Nano Lett.'), ' 15 (2015) 8245.'),
+        h('li', null, h('strong',null,'Kazakova et al.'), ', "Detection of a Micron-Sized Magnetic Particle Using InSb Hall Sensor," ', h('em',null,'IEEE Trans. Magn.'), ' 45 (2009) 4499.'),
+
+        h('li', null, h('strong',null,'Sandhu et al.'), ', "High Sensitivity InSb Ultra-Thin Film Micro-Hall Sensors," ', h('em',null,'Jpn. J. Appl. Phys.'), ' 43 (2004) L868.'),
+        h('li', null, h('strong',null,'Bruus'), ', ', h('em',null,'Theoretical Microfluidics'), ', Oxford University Press (2007).'),
+        h('li', null, h('strong',null,'Popovic'), ', ', h('em',null,'Hall Effect Devices'), ', 2nd ed., CRC Press (2004).'),
+      ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// 2D AXISYMMETRIC FEM MAGNETOSTATIC SOLVER
+// Solves: (1/r)∂/∂r(r·μᵣ·∂φ/∂r) + ∂/∂z(μᵣ·∂φ/∂z) = 0
+// Linear triangular elements, PCG solver, adaptive structured mesh
+// ══════════════════════════════════════════════════════════════════════════════
+
+function femGridLines(lo, hi, n, features) {
+  const nS = 500, len = hi - lo;
+  const den = new Float64Array(nS);
+  for (let i = 0; i < nS; i++) {
+    const x = lo + len * (i + 0.5) / nS;
+    let d = 1;
+    for (const f of features) d += f.w / (1 + ((x - f.p) / f.s) ** 2);
+    den[i] = d;
+  }
+  const cum = new Float64Array(nS + 1);
+  for (let i = 0; i < nS; i++) cum[i + 1] = cum[i] + den[i];
+  const tot = cum[nS];
+  const lines = [lo];
+  for (let j = 1; j < n; j++) {
+    const tgt = tot * j / n;
+    let a = 0, b = nS;
+    while (b - a > 1) { const m = (a + b) >> 1; cum[m] < tgt ? a = m : b = m; }
+    const frac = (tgt - cum[a]) / (cum[b] - cum[a] || 1);
+    lines.push(lo + (a + frac) / nS * len);
+  }
+  lines.push(hi);
+  return lines;
+}
+
+function femCreateMesh(beadR, beadH, sensHW, sensT, muR, nG) {
+  const domR = Math.max(15 * beadR, 3 * sensHW, 8 * beadH);
+  const domZlo = -3 * sensT, domZhi = Math.max(domR * 0.8, beadH + 12 * beadR);
+  const rFeat = [{p:0,s:beadR*0.25,w:5},{p:beadR,s:beadR*0.3,w:12},{p:sensHW,s:sensHW*0.3,w:5}];
+  const zFeat = [{p:0,s:sensT*0.4,w:8},{p:beadH,s:beadR*0.3,w:12},
+                 {p:beadH+beadR,s:beadR*0.2,w:10},{p:beadH-beadR,s:beadR*0.2,w:10}];
+  const rs = femGridLines(0, domR, nG, rFeat);
+  const zs = femGridLines(domZlo, domZhi, nG, zFeat);
+  const nr = rs.length, nz = zs.length, nodes = [];
+  for (let iz = 0; iz < nz; iz++)
+    for (let ir = 0; ir < nr; ir++) nodes.push({r:rs[ir], z:zs[iz]});
+  const idx = (ir, iz) => iz * nr + ir;
+  const elements = [];
+  for (let iz = 0; iz < nz - 1; iz++)
+    for (let ir = 0; ir < nr - 1; ir++) {
+      const n00=idx(ir,iz), n10=idx(ir+1,iz), n01=idx(ir,iz+1), n11=idx(ir+1,iz+1);
+      elements.push({n:[n00,n10,n11]}); elements.push({n:[n00,n11,n01]});
+    }
+  for (const el of elements) {
+    const cr=(nodes[el.n[0]].r+nodes[el.n[1]].r+nodes[el.n[2]].r)/3;
+    const cz=(nodes[el.n[0]].z+nodes[el.n[1]].z+nodes[el.n[2]].z)/3;
+    const dist=Math.sqrt(cr*cr+(cz-beadH)**2);
+    el.muR = dist < beadR ? muR : 1.0;
+    el.inBead = dist < beadR;
+    el.cr = cr; el.cz = cz;
+  }
+  const bc = new Set();
+  for (let ir=0;ir<nr;ir++){bc.add(idx(ir,0));bc.add(idx(ir,nz-1));}
+  for (let iz=0;iz<nz;iz++) bc.add(idx(nr-1,iz));
+  return {nodes, elements, bc, nr, nz, domR, domZlo, domZhi, beadR, beadH, sensHW, sensT};
+}
+
+function femSolve(mesh, B0_T, tol, maxIter) {
+  const t0 = performance.now();
+  const H0 = B0_T / MU0, N = mesh.nodes.length;
+  const rows = new Array(N);
+  for (let i = 0; i < N; i++) rows[i] = new Map();
+  const rhs = new Float64Array(N);
+  function addK(i,j,v){rows[i].set(j,(rows[i].get(j)||0)+v);}
+
+  for (const el of mesh.elements) {
+    const [ni,nj,nk] = el.n;
+    const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+    const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+    const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+    const D=(rj-ri)*(zk-zi)-(rk-ri)*(zj-zi);
+    const A=Math.abs(D)/2;
+    if(A<1e-50) continue;
+    const br=[zj-zk,zk-zi,zi-zj], bz=[rk-rj,ri-rk,rj-ri];
+    const rBar=Math.max((ri+rj+rk)/3, 1e-15);
+    const c=el.muR*rBar/(4*A);
+    const ln=[ni,nj,nk];
+    for(let a=0;a<3;a++) for(let b=0;b<3;b++) addK(ln[a],ln[b],c*(br[a]*br[b]+bz[a]*bz[b]));
+  }
+
+  let maxD=0;
+  for(let i=0;i<N;i++) maxD=Math.max(maxD,rows[i].get(i)||0);
+  const pen=maxD*1e8;
+  for(const di of mesh.bc){
+    const g=H0*mesh.nodes[di].z;
+    rows[di].clear(); rows[di].set(di,pen); rhs[di]=g*pen;
+  }
+
+  const phi=new Float64Array(N);
+  for(let i=0;i<N;i++) phi[i]=H0*mesh.nodes[i].z;
+  const dInv=new Float64Array(N);
+  for(let i=0;i<N;i++) dInv[i]=1/(rows[i].get(i)||1);
+
+  function mv(x,y){for(let i=0;i<N;i++){let s=0;for(const[j,v]of rows[i])s+=v*x[j];y[i]=s;}}
+  const r=new Float64Array(N),z=new Float64Array(N),p=new Float64Array(N),Ap=new Float64Array(N);
+  const res=[];
+  mv(phi,Ap);
+  for(let i=0;i<N;i++)r[i]=rhs[i]-Ap[i];
+  for(let i=0;i<N;i++)z[i]=dInv[i]*r[i];
+  p.set(z);
+  let rz=0;for(let i=0;i<N;i++)rz+=r[i]*z[i];
+  let iter=0;
+  for(;iter<maxIter;iter++){
+    mv(p,Ap);
+    let pAp=0;for(let i=0;i<N;i++)pAp+=p[i]*Ap[i];
+    const alpha=rz/(pAp||1e-30);
+    for(let i=0;i<N;i++){phi[i]+=alpha*p[i];r[i]-=alpha*Ap[i];}
+    let rn=0;for(let i=0;i<N;i++)rn+=r[i]*r[i];
+    rn=Math.sqrt(rn); res.push(rn);
+    if(rn<tol) break;
+    for(let i=0;i<N;i++)z[i]=dInv[i]*r[i];
+    let rzn=0;for(let i=0;i<N;i++)rzn+=r[i]*z[i];
+    const beta=rzn/(rz||1e-30);
+    for(let i=0;i<N;i++)p[i]=z[i]+beta*p[i];
+    rz=rzn;
+  }
+  const solveTime = performance.now()-t0;
+  return {phi,res,iter:iter+1,solveTime,N};
+}
+
+function femField(mesh, phi, B0_T) {
+  const H0=B0_T/MU0;
+  return mesh.elements.map(el=>{
+    const [ni,nj,nk]=el.n;
+    const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+    const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+    const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+    const D=(rj-ri)*(zk-zi)-(rk-ri)*(zj-zi);
+    if(Math.abs(D)<1e-50) return {Br:0,Bz:-B0_T,dBz:0};
+    const dNdr=[(zj-zk)/D,(zk-zi)/D,(zi-zj)/D];
+    const dNdz=[(rk-rj)/D,(ri-rk)/D,(rj-ri)/D];
+    let dpdr=0,dpdz=0;
+    for(let a=0;a<3;a++){dpdr+=dNdr[a]*phi[el.n[a]];dpdz+=dNdz[a]*phi[el.n[a]];}
+    const Br=-MU0*el.muR*dpdr, Bz=-MU0*el.muR*dpdz;
+    return {Br, Bz, dBz:Bz-(-B0_T)};
+  });
+}
+
+function femSensorAvg(mesh, fd, sensHW) {
+  let sw=0,sn=0;
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    if(el.cz>-mesh.sensT*1.5&&el.cz<mesh.sensT*0.5&&el.cr<sensHW){
+      const [ni,nj,nk]=el.n;
+      const ri=mesh.nodes[ni].r,zi=mesh.nodes[ni].z;
+      const rj=mesh.nodes[nj].r,zj=mesh.nodes[nj].z;
+      const rk=mesh.nodes[nk].r,zk=mesh.nodes[nk].z;
+      const A=Math.abs((rj-ri)*(zk-zi)-(rk-ri)*(zj-zi))/2;
+      const w=A*Math.max(el.cr,1e-15);
+      sw+=fd[i].dBz*w; sn+=w;
+    }
+  }
+  return sn>0?sw/sn:0;
+}
+
+function femAnalyticalSensorAvg(mom, sensHW, beadH, sensT, nR) {
+  nR=nR||40;
+  let sw=0,sn=0;
+  for(let ir=0;ir<nR;ir++){
+    const r_=(ir+0.5)/nR*sensHW;
+    const Bz=(MU0/(4*Math.PI))*mom*(2*beadH*beadH-r_*r_)/Math.pow(r_*r_+beadH*beadH,2.5);
+    const w=r_;
+    sw+=Bz*w; sn+=w;
+  }
+  return sn>0?sw/sn:0;
+}
+
+function femDivColor(t) {
+  // Diverging colormap: blue → near-black midpoint → red/amber
+  // Perceptually uniform with sqrt scaling, dark-theme friendly
+  t=Math.max(-1,Math.min(1,t));
+  if(t>=0){
+    const s=Math.sqrt(t);
+    const r=Math.round(12+80*s+163*s*s);  // 12 → 255
+    const g=Math.round(10+50*s+10*s*s);    // 10 → 70
+    const b=Math.round(18+10*s-18*s*s);    // 18 → 10
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const s=Math.sqrt(-t);
+    const r=Math.round(12+5*s-7*s*s);      // 12 → 10
+    const g=Math.round(10+50*s+30*s*s);     // 10 → 90
+    const b=Math.round(18+100*s+137*s*s);   // 18 → 255
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+function femFmtSI(val) {
+  // Format a value with SI prefix for clean display
+  const av=Math.abs(val);
+  if(av===0) return '0';
+  if(av>=1) return val.toFixed(1);
+  if(av>=1e-3) return (val*1e3).toFixed(1)+'m';
+  if(av>=1e-6) return (val*1e6).toFixed(1)+'\u00b5';
+  if(av>=1e-9) return (val*1e9).toFixed(1)+'n';
+  return val.toExponential(1);
+}
+
+function drawFEMField(canvas, mesh, fd, cfg) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#060a14';ctx.fillRect(0,0,W,H);
+
+  // Fixed readable font sizes
+  const fs=13, tfs=11, sfs=10;
+  const pad={top:38,right:80,bottom:48,left:56};
+  const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+  const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+  const toP=(r,z)=>[pad.left+(r+rMax)/(2*rMax)*pW, pad.top+(1-(z-zMin)/(zMax-zMin))*pH];
+
+  // Find max |ΔBz| for color normalization
+  let mxAbs=0;
+  for(const f of fd) mxAbs=Math.max(mxAbs,Math.abs(f.dBz));
+  if(mxAbs<1e-18) mxAbs=1;
+
+  // Draw filled triangles (+ mirror) — skip in mesh-only mode
+  if(!cfg.meshOnly){
+    for(let i=0;i<mesh.elements.length;i++){
+      const el=mesh.elements[i];
+      const col=femDivColor(fd[i].dBz/mxAbs);
+      const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
+      ctx.fillStyle=col;
+      ctx.beginPath();
+      let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.fill();
+      ctx.beginPath();
+      [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.fill();
+    }
+  }
+
+  // Mesh wireframe overlay
+  if(cfg.showMesh){
+    // Brighter in mesh-only mode, subtle when overlaid on field
+    const meshAlpha=cfg.meshOnly?0.35:0.12;
+    // Color bead elements differently in mesh-only mode
+    for(let i=0;i<mesh.elements.length;i++){
+      const el=mesh.elements[i];
+      const n0=mesh.nodes[el.n[0]],n1=mesh.nodes[el.n[1]],n2=mesh.nodes[el.n[2]];
+      if(cfg.meshOnly){
+        ctx.strokeStyle=el.inBead?'rgba(245,158,11,'+meshAlpha+')':'rgba(148,163,184,'+meshAlpha+')';
+        // Light fill for bead region
+        if(el.inBead){ctx.fillStyle='rgba(245,158,11,0.06)';} else {ctx.fillStyle='transparent';}
+      } else {
+        ctx.strokeStyle='rgba(148,163,184,'+meshAlpha+')';
+      }
+      ctx.lineWidth=0.5;ctx.setLineDash([]);
+      // Right half
+      ctx.beginPath();
+      let[px,py]=toP(n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.stroke();
+      if(cfg.meshOnly&&el.inBead)ctx.fill();
+      // Mirror
+      ctx.beginPath();
+      [px,py]=toP(-n0.r,n0.z);ctx.moveTo(px,py);
+      [px,py]=toP(-n1.r,n1.z);ctx.lineTo(px,py);
+      [px,py]=toP(-n2.r,n2.z);ctx.lineTo(px,py);
+      ctx.closePath();ctx.stroke();
+      if(cfg.meshOnly&&el.inBead)ctx.fill();
+    }
+  }
+
+  // Plot border
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+
+  // Bead outline (circle at bead center)
+  const[bcx,bcy]=toP(0,mesh.beadH);
+  const brPx=mesh.beadR/(2*rMax)*pW;
+  ctx.strokeStyle='rgba(245,158,11,0.8)';ctx.lineWidth=1.5;ctx.setLineDash([]);
+  ctx.beginPath();ctx.arc(bcx,bcy,brPx,0,Math.PI*2);ctx.stroke();
+  // Bead label
+  ctx.fillStyle='rgba(245,158,11,0.85)';ctx.font=`${sfs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('bead',bcx+brPx+4,bcy-2);
+
+  // Sensor rectangle
+  const[sl,st]=toP(-mesh.sensHW,0),[sr,sb]=toP(mesh.sensHW,-mesh.sensT);
+  ctx.strokeStyle='rgba(34,211,238,0.8)';ctx.lineWidth=1.5;
+  ctx.strokeRect(sl,st,sr-sl,sb-st);
+  // Sensor label
+  ctx.fillStyle='rgba(34,211,238,0.8)';ctx.font=`${sfs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('sensor',sr+4,st+4);
+
+  // Symmetry axis (dashed center line)
+  const[axX,axTop]=toP(0,zMax),[_,axBot]=toP(0,zMin);
+  ctx.strokeStyle='rgba(148,163,184,0.2)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+  ctx.beginPath();ctx.moveTo(axX,axTop);ctx.lineTo(axX,axBot);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X-axis label
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('r (\u00b5m)',pad.left+pW/2,H-8);
+
+  // Y-axis label
+  ctx.save();ctx.translate(14,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('z (\u00b5m)',0,0);ctx.restore();
+
+  // X ticks — nice round values
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+  const rUm=rMax*1e6;
+  const rStep=rUm>40?20:rUm>20?10:rUm>8?5:rUm>3?2:1;
+  for(let rv=-Math.floor(rUm/rStep)*rStep;rv<=rUm;rv+=rStep){
+    const rM=rv*1e-6;
+    if(Math.abs(rM)>rMax*1.01) continue;
+    const[tx,ty]=toP(rM,zMin);
+    ctx.fillText(rv.toString(),tx,ty+tfs+5);
+    ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx,ty+3);ctx.stroke();
+  }
+
+  // Z ticks — nice round values
+  ctx.textAlign='right';
+  const zUmMin=zMin*1e6, zUmMax=zMax*1e6, zSpanUm=zUmMax-zUmMin;
+  const zStep=zSpanUm>80?20:zSpanUm>40?10:zSpanUm>16?5:zSpanUm>6?2:1;
+  for(let zv=Math.ceil(zUmMin/zStep)*zStep;zv<=zUmMax;zv+=zStep){
+    const zM=zv*1e-6;
+    const[tx,ty]=toP(-rMax,zM);
+    ctx.fillStyle='#94a3b8';ctx.fillText(zv.toString(),tx-5,ty+4);
+    ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left-3,ty);ctx.lineTo(pad.left,ty);ctx.stroke();
+  }
+
+  // Title
+  ctx.fillStyle='#e2e8f0';ctx.font=`600 ${fs+1}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('\u0394Bz Perturbation Field (axisymmetric)',pad.left+pW/2,pad.top-16);
+
+  // Color bar — vertical gradient with border
+  const cbW=14,cbH=pH*0.7,cbX=W-pad.right+16,cbY=pad.top+(pH-cbH)/2;
+  // Draw gradient
+  for(let iy=0;iy<cbH;iy++){
+    const t=1-2*iy/cbH;
+    ctx.fillStyle=femDivColor(t);ctx.fillRect(cbX,cbY+iy,cbW,1.5);
+  }
+  // Color bar border
+  ctx.strokeStyle='rgba(100,116,139,0.35)';ctx.lineWidth=1;
+  ctx.strokeRect(cbX,cbY,cbW,cbH);
+  // Center tick
+  ctx.strokeStyle='rgba(148,163,184,0.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cbX+cbW,cbY+cbH/2);ctx.lineTo(cbX+cbW+3,cbY+cbH/2);ctx.stroke();
+
+  // Color bar labels — use SI prefix for clean display
+  ctx.font=`${sfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='left';
+  const cbLabel=femFmtSI(mxAbs);
+  ctx.fillText('+'+cbLabel+'T',cbX+cbW+5,cbY+4);
+  ctx.fillText('0',cbX+cbW+5,cbY+cbH/2+4);
+  ctx.fillText('\u2212'+cbLabel+'T',cbX+cbW+5,cbY+cbH+4);
+}
+
+function drawFEMComparison(canvas, mesh, fd, mom, cfg) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,W,H);
+
+  // Font sizes — use fixed readable sizes, not chartFS which is tuned for wide charts
+  const fs=13, tfs=11, lfs=10;
+  const pad={top:36,right:28,bottom:48,left:72};
+  const pW=W-pad.left-pad.right,pH=H-pad.top-pad.bottom;
+
+  // Extract ΔBz vs r along sensor surface (z ≈ 0)
+  const sensorEls=[];
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    if(Math.abs(el.cz)<mesh.sensT*2&&el.cr<mesh.domR*0.5){
+      sensorEls.push({r:el.cr,dBz:fd[i].dBz});
+    }
+  }
+  sensorEls.sort((a,b)=>a.r-b.r);
+
+  // Analytical curve
+  const nPts=120, rMaxPlot=mesh.domR*0.4;
+  const analyticalPts=[];
+  for(let i=0;i<nPts;i++){
+    const r_=(i+0.5)/nPts*rMaxPlot;
+    const hh=mesh.beadH;
+    const dBz=(MU0/(4*Math.PI))*mom*(2*hh*hh-r_*r_)/Math.pow(r_*r_+hh*hh,2.5);
+    analyticalPts.push({r:r_,dBz});
+  }
+
+  // Find plot range
+  let yMin=0,yMax=0;
+  for(const p of sensorEls){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
+  for(const p of analyticalPts){yMin=Math.min(yMin,p.dBz);yMax=Math.max(yMax,p.dBz);}
+  const yPad=(yMax-yMin)*0.12||1e-6;yMin-=yPad;yMax+=yPad;
+
+  // Smart Y-axis: find a common scale factor for clean tick labels
+  const yAbsMax=Math.max(Math.abs(yMin),Math.abs(yMax));
+  const yExp=yAbsMax>0?Math.floor(Math.log10(yAbsMax)):0;
+  const yScale=Math.pow(10,yExp);
+
+  const toX=r=>pad.left+r/rMaxPlot*pW;
+  const toY=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*pH;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(30,41,59,0.3)';ctx.lineWidth=0.5;
+  for(let i=0;i<=5;i++){const y=pad.top+pH*i/5;ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(pad.left+pW,y);ctx.stroke();}
+  for(let i=1;i<=3;i++){const x=pad.left+pW*i/4;ctx.beginPath();ctx.moveTo(x,pad.top);ctx.lineTo(x,pad.top+pH);ctx.stroke();}
+
+  // Axes border
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+
+  // Analytical line (green, solid)
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();
+  analyticalPts.forEach((p,i)=>{const x=toX(p.r),y=toY(p.dBz);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+
+  // FEM points (scatter)
+  ctx.fillStyle='rgba(6,182,212,0.75)';
+  const step=Math.max(1,Math.floor(sensorEls.length/250));
+  for(let i=0;i<sensorEls.length;i+=step){
+    const p=sensorEls[i];
+    if(p.r>rMaxPlot) continue;
+    const x=toX(p.r),y=toY(p.dBz);
+    ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();
+  }
+
+  // Sensor half-width dashed marker
+  if(mesh.sensHW<rMaxPlot){
+    const sx=toX(mesh.sensHW);
+    ctx.strokeStyle='rgba(167,139,250,0.45)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(sx,pad.top);ctx.lineTo(sx,pad.top+pH);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(167,139,250,0.7)';ctx.font=`${lfs}px "DM Sans"`;
+    ctx.textAlign='left';ctx.fillText('sensor edge',sx+4,pad.top+14);
+  }
+
+  // Title
+  ctx.fillStyle='#cbd5e1';ctx.font=`600 ${fs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('FEM vs Analytical \u0394Bz at Sensor Plane',pad.left,pad.top-14);
+
+  // Y-axis label with exponent
+  const supDigits='\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079';
+  const expStr=(yExp<0?'\u207b':'')+String(Math.abs(yExp)).split('').map(d=>supDigits[+d]).join('');
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.save();ctx.translate(14,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('\u0394Bz (\u00d710'+expStr+' T)',0,0);
+  ctx.restore();
+
+  // Y ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='right';
+  for(let i=0;i<=5;i++){
+    const v=yMin+(yMax-yMin)*i/5;
+    const vs=v/yScale;
+    const y=pad.top+pH*(1-i/5);
+    ctx.fillText(vs.toFixed(2),pad.left-6,y+4);
+    ctx.strokeStyle='rgba(100,116,139,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.left-3,y);ctx.lineTo(pad.left,y);ctx.stroke();
+  }
+
+  // X-axis label
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('Radial distance r (\u00b5m)',pad.left+pW/2,H-6);
+
+  // X ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='center';
+  for(let i=0;i<=4;i++){
+    const r_=rMaxPlot*i/4;
+    const x=toX(r_);
+    ctx.fillText((r_*1e6).toFixed(0),x,pad.top+pH+16);
+    ctx.strokeStyle='rgba(100,116,139,0.3)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,pad.top+pH);ctx.lineTo(x,pad.top+pH+3);ctx.stroke();
+  }
+
+  // Legend — top right corner with background
+  const lgW=160,lgH=42;
+  const lgX=pad.left+pW-lgW-4,lgY=pad.top+6;
+  ctx.fillStyle='rgba(13,20,36,0.88)';
+  ctx.strokeStyle='rgba(100,116,139,0.25)';ctx.lineWidth=1;
+  ctx.beginPath();
+  if(ctx.roundRect){ctx.roundRect(lgX,lgY,lgW,lgH,4);}else{ctx.rect(lgX,lgY,lgW,lgH);}
+  ctx.fill();ctx.stroke();
+  ctx.font=`${lfs+1}px "DM Sans"`;ctx.textAlign='left';
+  // Analytical legend entry
+  ctx.strokeStyle='#22c55e';ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(lgX+8,lgY+14);ctx.lineTo(lgX+28,lgY+14);ctx.stroke();
+  ctx.fillStyle='#cbd5e1';ctx.fillText('Analytical (dipole)',lgX+34,lgY+18);
+  // FEM legend entry
+  ctx.fillStyle='#06b6d4';ctx.beginPath();ctx.arc(lgX+18,lgY+32,3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#cbd5e1';ctx.fillText('FEM (axisymmetric)',lgX+34,lgY+36);
+}
+
+// Convergence residual chart
+function drawFEMConvergence(canvas, residuals) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,W,H);
+  if(!residuals||residuals.length<2) return;
+  const fs=12,tfs=10;
+  const pad={top:28,right:16,bottom:36,left:52};
+  const pW=W-pad.left-pad.right,pH=H-pad.top-pad.bottom;
+  const n=residuals.length;
+  // Log scale Y
+  const logRes=residuals.map(r=>Math.log10(Math.max(r,1e-20)));
+  let yMin=Math.floor(Math.min(...logRes)),yMax=Math.ceil(Math.max(...logRes));
+  if(yMax-yMin<2){yMin=yMax-2;}
+  const toX=i=>pad.left+(i/(n-1))*pW;
+  const toY=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*pH;
+  // Grid
+  ctx.strokeStyle='rgba(30,41,59,0.3)';ctx.lineWidth=0.5;
+  for(let y=yMin;y<=yMax;y++){const py=toY(y);ctx.beginPath();ctx.moveTo(pad.left,py);ctx.lineTo(pad.left+pW,py);ctx.stroke();}
+  ctx.strokeStyle='rgba(100,116,139,0.4)';ctx.lineWidth=1;
+  ctx.strokeRect(pad.left,pad.top,pW,pH);
+  // Line
+  ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.setLineDash([]);ctx.beginPath();
+  logRes.forEach((v,i)=>{const x=toX(i),y=toY(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Tolerance line
+  const tolY=toY(-10);
+  if(tolY>pad.top&&tolY<pad.top+pH){
+    ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(pad.left,tolY);ctx.lineTo(pad.left+pW,tolY);ctx.stroke();
+    ctx.setLineDash([]);ctx.fillStyle='rgba(239,68,68,0.6)';ctx.font=`${tfs}px "DM Sans"`;
+    ctx.textAlign='left';ctx.fillText('tol=10\u207b\u00b9\u2070',pad.left+4,tolY-4);
+  }
+  // Labels
+  ctx.fillStyle='#94a3b8';ctx.font=`${fs}px "DM Sans"`;ctx.textAlign='center';
+  ctx.fillText('CG Iteration',pad.left+pW/2,H-6);
+  ctx.save();ctx.translate(12,pad.top+pH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillText('log\u2081\u2080(residual)',0,0);ctx.restore();
+  // Y ticks
+  ctx.font=`${tfs}px "JetBrains Mono"`;ctx.fillStyle='#94a3b8';ctx.textAlign='right';
+  for(let y=yMin;y<=yMax;y++){ctx.fillText('10'+('\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079'[Math.abs(y%10)]||y),pad.left-5,toY(y)+4);}
+  // Actually write proper superscripts for Y labels
+  ctx.clearRect(0,0,pad.left-2,H);
+  ctx.fillStyle='#0d1424';ctx.fillRect(0,0,pad.left-2,H);
+  ctx.fillStyle='#94a3b8';ctx.font=`${tfs}px "JetBrains Mono"`;ctx.textAlign='right';
+  const supD='\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079';
+  for(let y=yMin;y<=yMax;y++){
+    const expS=(y<0?'\u207b':'')+String(Math.abs(y)).split('').map(d=>supD[+d]).join('');
+    ctx.fillText('10'+expS,pad.left-5,toY(y)+4);
+  }
+  // X ticks
+  ctx.textAlign='center';
+  const xStep=Math.max(1,Math.round(n/5));
+  for(let i=0;i<=n-1;i+=xStep){ctx.fillText(i.toString(),toX(i),pad.top+pH+14);}
+  // Title
+  ctx.fillStyle='#cbd5e1';ctx.font=`600 ${fs}px "DM Sans"`;ctx.textAlign='left';
+  ctx.fillText('PCG Solver Convergence',pad.left,pad.top-10);
+}
+
+// Interactive field map: draws probe crosshair at given (r,z) coords
+function drawFEMFieldProbe(canvas, mesh, fd, probeR, probeZ) {
+  const W=canvas.width/2, H=canvas.height/2;
+  const ctx=canvas.getContext('2d');
+  const pad={top:38,right:80,bottom:48,left:56};
+  const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+  const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+  const toP=(r,z)=>[pad.left+(r+rMax)/(2*rMax)*pW, pad.top+(1-(z-zMin)/(zMax-zMin))*pH];
+  const[px,py]=toP(probeR,probeZ);
+  // Draw crosshair
+  ctx.setTransform(2,0,0,2,0,0);
+  ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=0.5;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(pad.left,py);ctx.lineTo(pad.left+pW,py);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(px,pad.top);ctx.lineTo(px,pad.top+pH);ctx.stroke();
+  ctx.setLineDash([]);
+  // Probe dot
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='var(--primary)';ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);ctx.fill();
+}
+
+// Find element and ΔBz at given (r,z) coordinates in mesh
+function femProbeAt(mesh, fd, r, z) {
+  // Find closest element centroid
+  let best=-1, bestD=Infinity;
+  for(let i=0;i<mesh.elements.length;i++){
+    const el=mesh.elements[i];
+    const dr=Math.abs(el.cr)-Math.abs(r), dz=el.cz-z;
+    const d=dr*dr+dz*dz;
+    if(d<bestD){bestD=d;best=i;}
+  }
+  if(best<0) return null;
+  const el=mesh.elements[best];
+  return {dBz:fd[best].dBz, Bz:fd[best].Bz, Br:fd[best].Br, inBead:el.inBead, muR:el.muR, r:el.cr, z:el.cz};
+}
+
+// ── FEM Page Component ──
+function FEMPage({matIdx, customMat, beadIdx, beadMode, customBead,
+  sensMode, sensIdx, customSensor, B0, vBias, fixedHeight, Vg}) {
+
+  const canvasRef = useRef(null);
+  const compRef = useRef(null);
+  const convRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const [solving, setSolving] = useState(false);
+  const [solveProgress, setSolveProgress] = useState(0);
+  const [result, setResult] = useState(null);
+  const [meshRes, setMeshRes] = useState('medium');
+  const [femBeadR, setFemBeadR] = useState(null);
+  const [femBeadH, setFemBeadH] = useState(null);
+  const [femB0, setFemB0] = useState(null);
+  const [femMuR, setFemMuR] = useState(null);
+  const [fieldView, setFieldView] = useState('field'); // field | mesh | both
+  const [showExplain, setShowExplain] = useState(true);
+
+  // Derive defaults from app state
+  const isCustomMat = matIdx >= MATERIALS.length;
+  const mat = isCustomMat ? customMat : MATERIALS[matIdx];
+  const mProps = computeMatProps(mat, Vg);
+  const bead = beadMode==='custom' ? customBead : BEAD_LIBRARY[beadIdx];
+  const bR = (femBeadR !== null ? femBeadR : (bead.d || bead.d_m || 2.83e-6) * 0.5);
+  const bMuR = femMuR !== null ? femMuR : (bead.mu_r || 10);
+  const bH = (femBeadH !== null ? femBeadH : fixedHeight) * 1e-6;
+  const b0 = (femB0 !== null ? femB0 : B0) * 1e-3;
+  const sensor = sensMode==='preset' ? [{size:5e-6,t:0.5e-6},{size:10e-6,t:1e-6},{size:50e-6,t:1e-6}][sensIdx] : customSensor;
+  const sensHW = sensor.size / 2;
+  const sensT = sensor.t;
+
+  const meshNMap = {coarse:40, medium:70, fine:100, ultra:140};
+  const nG = meshNMap[meshRes] || 70;
+
+  // Redraw field when view mode changes
+  useEffect(() => {
+    if (!result || !canvasRef.current) return;
+    const c = canvasRef.current;
+    const W = c.parentElement.clientWidth, H = c.parentElement.clientHeight || 400;
+    c.width = W*2; c.height = H*2; c.style.width = W+'px'; c.style.height = H+'px';
+    drawFEMField(c, result.mesh, result.fd, {showMesh: fieldView!=='field', meshOnly: fieldView==='mesh'});
+  }, [result, fieldView]);
+
+  // Draw comparison + convergence charts
+  useEffect(() => {
+    if (!result) return;
+    if (compRef.current) {
+      const c = compRef.current;
+      const wrap = c.closest('.fem-comparison');
+      const W = (wrap ? wrap.clientWidth - 32 : 500);
+      const cH = Math.max(240, Math.round(W * 0.5));
+      c.width = W*2; c.height = cH*2; c.style.width = W+'px'; c.style.height = cH+'px';
+      drawFEMComparison(c, result.mesh, result.fd, result.mom, {});
+    }
+    if (convRef.current && result.sol.res.length > 1) {
+      const c = convRef.current;
+      const wrap = c.closest('.fem-convergence');
+      const W = (wrap ? wrap.clientWidth - 32 : 500);
+      const cH = Math.max(200, Math.round(W * 0.4));
+      c.width = W*2; c.height = cH*2; c.style.width = W+'px'; c.style.height = cH+'px';
+      drawFEMConvergence(c, result.sol.res);
+    }
+  }, [result]);
+
+  // Interactive mouse hover on field canvas
+  useEffect(() => {
+    if (!result || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const mesh = result.mesh, fd = result.fd;
+    const pad={top:38,right:80,bottom:48,left:56};
+
+    function onMove(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const W = rect.width, H = rect.height;
+      const pW=W-pad.left-pad.right, pH=H-pad.top-pad.bottom;
+      // Convert pixel to (r, z)
+      const rFrac = (mx - pad.left) / pW;
+      const zFrac = 1 - (my - pad.top) / pH;
+      if(rFrac < 0 || rFrac > 1 || zFrac < 0 || zFrac > 1) {
+        if(tooltipRef.current) tooltipRef.current.classList.remove('vis');
+        return;
+      }
+      const rMax=mesh.domR, zMin=mesh.domZlo, zMax=mesh.domZhi;
+      const probeR = (rFrac * 2 - 1) * rMax; // -rMax to +rMax
+      const probeZ = zMin + zFrac * (zMax - zMin);
+      const info = femProbeAt(mesh, fd, probeR, probeZ);
+      if(!info || !tooltipRef.current) return;
+      const tt = tooltipRef.current;
+      tt.classList.add('vis');
+      // Position tooltip
+      const ttX = Math.min(mx + 16, W - 200);
+      const ttY = Math.max(my - 70, 4);
+      tt.style.left = ttX + 'px';
+      tt.style.top = ttY + 'px';
+      const dBzVal = info.dBz;
+      const cls = dBzVal > 0 ? 'pos' : dBzVal < 0 ? 'neg' : '';
+      tt.innerHTML = '<div class="tt-label">Position</div>'
+        + '<div>r = <span class="tt-val">' + (Math.abs(probeR)*1e6).toFixed(1) + ' \u00b5m</span>'
+        + '  z = <span class="tt-val">' + (probeZ*1e6).toFixed(1) + ' \u00b5m</span></div>'
+        + '<div class="tt-label" style="margin-top:4px">\u0394Bz</div>'
+        + '<div class="tt-val ' + cls + '">' + femFmtSI(dBzVal) + 'T</div>'
+        + (info.inBead ? '<div style="color:#f59e0b;margin-top:2px">Inside bead (\u03bc\u1d63=' + info.muR.toFixed(0) + ')</div>' : '')
+        + '<div class="tt-label" style="margin-top:2px">|B| = <span class="tt-val">' + femFmtSI(Math.sqrt(info.Br*info.Br+info.Bz*info.Bz)) + 'T</span></div>';
+
+      // Redraw field + crosshair overlay
+      const c = canvas;
+      const cW = c.parentElement.clientWidth, cH = c.parentElement.clientHeight || 400;
+      c.width = cW*2; c.height = cH*2; c.style.width = cW+'px'; c.style.height = cH+'px';
+      drawFEMField(c, mesh, fd, {showMesh: fieldView==='mesh'||fieldView==='both'});
+      drawFEMFieldProbe(c, mesh, fd, probeR, probeZ);
+    }
+
+    function onLeave() {
+      if(tooltipRef.current) tooltipRef.current.classList.remove('vis');
+      // Redraw without crosshair
+      const c = canvas;
+      const cW = c.parentElement.clientWidth, cH = c.parentElement.clientHeight || 400;
+      c.width = cW*2; c.height = cH*2; c.style.width = cW+'px'; c.style.height = cH+'px';
+      drawFEMField(c, mesh, fd, {showMesh: fieldView==='mesh'||fieldView==='both'});
+    }
+
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseleave', onLeave);
+    return () => { canvas.removeEventListener('mousemove', onMove); canvas.removeEventListener('mouseleave', onLeave); };
+  }, [result, fieldView]);
+
+  function doSolve() {
+    setSolving(true);
+    setSolveProgress(0);
+    setTimeout(() => {
+      try {
+        const beadR_m = bR < 1e-3 ? bR : bR * 1e-6;
+        const beadH_m = bH < 1e-3 ? bH : bH * 1e-6;
+        setSolveProgress(10);
+        const mesh = femCreateMesh(beadR_m, beadH_m, sensHW, sensT, bMuR, nG);
+        setSolveProgress(30);
+        const sol = femSolve(mesh, b0, 1e-10, 2000);
+        setSolveProgress(70);
+        const fd = femField(mesh, sol.phi, b0);
+        const femAvg = femSensorAvg(mesh, fd, sensHW);
+        const mom = beadMoment(beadR_m, bMuR, b0);
+        const anaAvg = femAnalyticalSensorAvg(mom, sensHW, beadH_m, sensT, 60);
+        const femDVH = Math.abs(mProps.RH * mProps.sigma * femAvg * vBias) * 1000;
+        const anaDVH = Math.abs(mProps.RH * mProps.sigma * anaAvg * vBias) * 1000;
+        const errPct = anaDVH > 0 ? Math.abs(femDVH - anaDVH) / anaDVH * 100 : 0;
+        setSolveProgress(100);
+
+        setResult({mesh, fd, sol, femAvg, anaAvg, femDVH, anaDVH, errPct, mom,
+          nNodes: sol.N, nElems: mesh.elements.length, solveMs: sol.solveTime,
+          cgIter: sol.iter, finalRes: sol.res[sol.res.length-1]||0,
+          beadR_m: beadR_m, beadH_m: beadH_m, b0_T: b0, bMuR_val: bMuR});
+      } catch(e) { console.error('FEM solve error:', e); }
+      setSolving(false);
+    }, 50);
+  }
+
+  const bR_um = (bR < 1e-3 ? bR*1e6 : bR).toFixed(2);
+  const bH_um = (bH < 1e-3 ? bH*1e6 : bH).toFixed(1);
+
+  // Error interpretation
+  const errInterpret = result ? (
+    result.errPct < 3 ? 'Excellent agreement \u2014 dipole approximation is highly accurate for these parameters.'
+    : result.errPct < 8 ? 'Good agreement. Minor deviation from dipole model due to finite bead size and sensor proximity.'
+    : result.errPct < 15 ? 'Moderate deviation. The bead is close enough to the sensor that higher-order multipole terms matter. The dipole model underestimates near-field contributions.'
+    : 'Significant deviation. The bead-sensor distance is comparable to the bead radius (h/R=' + (result.beadH_m/result.beadR_m).toFixed(1) + '), violating the point-dipole assumption. FEM captures the true distributed magnetization.'
+  ) : '';
+
+  return h('div', {className:'fem-wrap'},
+    // ─── Controls sidebar ───
+    h('div', {className:'fem-controls'},
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--bead)'}}), ' Bead Parameters'),
+        h(Slider, {label:'Radius (R)', value:+bR_um, min:0.1, max:10, step:0.05, unit:' \u00b5m',
+          onChange:v=>setFemBeadR(v*1e-6)}),
+        h(Slider, {label:'Rel. permeability \u03bc\u1d63', value:bMuR, min:2, max:100, step:1, unit:'',
+          onChange:v=>setFemMuR(v)}),
+        h(Slider, {label:'Height above sensor (h)', value:+bH_um, min:0.5, max:30, step:0.5, unit:' \u00b5m',
+          onChange:v=>setFemBeadH(v)}),
+        showExplain && h('div',{className:'fem-explain'},
+          'The bead acquires a magnetic moment ', h('span',{className:'eq-inline'},'m = V\u00b7\u03c7\u2091\u1da0\u1da0\u00b7H\u2080'),
+          ' in the applied field. ',
+          h('b',null,'h/R ratio: '), ((bH < 1e-3 ? bH*1e6 : bH) / (bR < 1e-3 ? bR*1e6 : bR)).toFixed(1),
+          ' \u2014 ', ((bH < 1e-3 ? bH*1e6 : bH) / (bR < 1e-3 ? bR*1e6 : bR)) > 3 ? 'dipole approx. valid' : 'near-field effects significant',
+        ),
+      ),
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--primary)'}}), ' Applied Field'),
+        h(Slider, {label:'B\u2080', value:femB0!==null?femB0:B0, min:10, max:500, step:5, unit:' mT',
+          onChange:v=>setFemB0(v)}),
+        h('div',{className:'fem-mesh-info',style:{marginTop:'6px'}},
+          h('span',{className:'mi-label'},'Sensor:'),h('span',{className:'mi-val'},(sensor.size*1e6).toFixed(0)+'\u00d7'+(sensor.size*1e6).toFixed(0)+' \u00b5m\u00b2'),
+          h('span',{className:'mi-label'},'Thickness:'),h('span',{className:'mi-val'},(sensor.t*1e6).toFixed(1)+' \u00b5m'),
+          h('span',{className:'mi-label'},'Material:'),h('span',{className:'mi-val'},isCustomMat?'Custom':mat.name),
+          h('span',{className:'mi-label'},'R\u2095:'),h('span',{className:'mi-val'},mProps.RH.toExponential(2)+' m\u00b3/C'),
+        ),
+      ),
+      h('div', {className:'d-card'},
+        h('div', {className:'d-card-title'}, h('span',{className:'dot',style:{background:'var(--signal)'}}), ' Mesh Resolution'),
+        h('div', {className:'mode-tabs'},
+          ['coarse','medium','fine','ultra'].map(r =>
+            h('button', {key:r, className:'mode-tab'+(meshRes===r?' active':''),
+              onClick:()=>setMeshRes(r), disabled:solving},
+              r.charAt(0).toUpperCase()+r.slice(1))
+          )
+        ),
+        h('div',{className:'fem-mesh-info'},
+          h('span',{className:'mi-label'},'Grid:'),h('span',{className:'mi-val'},nG+'\u00d7'+nG),
+          h('span',{className:'mi-label'},'Elements:'),h('span',{className:'mi-val'},'~'+((nG)*(nG)*2).toLocaleString()),
+          h('span',{className:'mi-label'},'Refinement:'),h('span',{className:'mi-val'},'Adaptive (bead+sensor)'),
+        ),
+        showExplain && h('div',{className:'fem-explain',style:{marginTop:'8px'}},
+          'Structured mesh with Lorentzian density peaks near bead boundary (w=12) and sensor surface (w=8). Each quad cell splits into 2 triangles.',
+        ),
+      ),
+      h('button', {className:'fem-solve-btn', onClick:doSolve, disabled:solving},
+        solving ? 'Solving\u2026' : '\u25b6 Solve FEM'),
+      solving && h('div',{className:'fem-progress'},
+        h('div',{className:'fem-progress-bar',style:{width:solveProgress+'%'}})),
+      result && h('div', {className:'fem-status'},
+        h('div',null,result.nNodes.toLocaleString()+' nodes \u00b7 '+result.nElems.toLocaleString()+' elements'),
+        h('div',null,result.cgIter+' CG iters \u00b7 '+result.solveMs.toFixed(0)+' ms'),
+        h('div',null,'Residual: '+result.finalRes.toExponential(2)),
+      ),
+      h('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px'}},
+        h('button',{
+          style:{fontSize:'var(--fs-xs)',color:showExplain?'var(--primary)':'var(--muted)',background:'none',border:'1px solid '+(showExplain?'var(--primary-dim)':'var(--subtle)'),borderRadius:'4px',padding:'4px 10px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"},
+          onClick:()=>setShowExplain(!showExplain)},
+          showExplain ? '\u25bc Hide Explanations' : '\u25b6 Show Explanations'),
+      ),
+    ),
+
+    // ─── Field visualization (spans 2 columns) ───
+    h('div', {className:'fem-canvas-wrap'},
+      h('canvas', {ref:canvasRef}),
+      h('div', {ref:tooltipRef, className:'fem-tooltip'}),
+      // View mode tabs overlay
+      h('div',{style:{position:'absolute',top:'8px',left:'8px',display:'flex',gap:'2px',zIndex:5}},
+        h('div',{className:'fem-view-tabs'},
+          ['field','mesh','both'].map(v=>
+            h('button',{key:v,className:'fem-view-tab'+(fieldView===v?' active':''),
+              onClick:()=>setFieldView(v)},
+              v==='field'?'\u0394Bz Field':v==='mesh'?'Mesh':'\u0394Bz + Mesh')
+          ),
+        ),
+      ),
+      !result && h('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'var(--muted)',fontSize:'var(--fs-md)',gap:'12px'}},
+        h('div',{style:{fontSize:'var(--fs-xl)',opacity:0.3}},'\ud83d\udd2c'),
+        'Configure parameters and click Solve FEM',
+        h('div',{style:{fontSize:'var(--fs-xs)',maxWidth:'340px',textAlign:'center',lineHeight:'1.5'}},
+          'The solver builds a 2D axisymmetric triangular mesh, assembles the magnetostatic stiffness matrix, and solves \u2207\u00b7(\u03bc\u1d63\u2207\u03c6) = 0 with preconditioned conjugate gradient.'),
+      ),
+    ),
+
+    // ─── Comparison chart ───
+    h('div', {className:'fem-comparison'},
+      result ? h(React.Fragment, null,
+        h('div', {className:'fem-results'},
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'FEM \u0394V\u2095'),
+            h('div', {className:'fem-result-value'}, result.femDVH.toFixed(4)+' mV'),
+          ),
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'Analytical \u0394V\u2095'),
+            h('div', {className:'fem-result-value'}, result.anaDVH.toFixed(4)+' mV'),
+          ),
+          h('div', {className:'fem-result-card'},
+            h('div', {className:'fem-result-label'}, 'Difference'),
+            h('div', {className:'fem-result-value '+(result.errPct<5?'good':result.errPct<15?'warn':'')},
+              result.errPct.toFixed(1)+'%'),
+          ),
+        ),
+        showExplain && h('div',{className:'fem-explain',style:{marginBottom:'8px'}},
+          h('b',null,'Interpretation: '), errInterpret,
+          ' The Clausius\u2013Mossotti effective susceptibility is ',
+          h('span',{className:'eq-inline'},'\u03c7\u2091\u1da0\u1da0 = 3(\u03bc\u1d63\u22121)/(\u03bc\u1d63+2) = '+(3*(bMuR-1)/(bMuR+2)).toFixed(2)),
+          '.',
+        ),
+        h('canvas', {ref:compRef, style:{width:'100%'}}),
+      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'20px',lineHeight:'1.7'}},
+        h('div',{style:{fontSize:'var(--fs-md)',marginBottom:'8px'}},'FEM vs. Analytical Comparison'),
+        'After solving, this panel shows the radial profile of \u0394Bz at the sensor plane. ',
+        'The green curve is the point-dipole analytical model; cyan dots are FEM element values.',
+      ),
+    ),
+
+    // ─── Convergence chart ───
+    h('div', {className:'fem-convergence'},
+      result && result.sol.res.length > 1 ? h(React.Fragment, null,
+        h('canvas', {ref:convRef, style:{width:'100%'}}),
+        showExplain && h('div',{className:'fem-explain',style:{marginTop:'8px'}},
+          'The preconditioned conjugate gradient (PCG) solver minimizes ',
+          h('span',{className:'eq-inline'},'K\u03c6 = f'),
+          ' with diagonal preconditioning. ',
+          'Converged in ', h('b',null,result.cgIter), ' iterations to residual ',
+          h('span',{className:'eq-inline'},result.finalRes.toExponential(2)),
+          '. Penalty method (10\u2078\u00b7max(K\u1d62\u1d62)) enforces Dirichlet BCs on domain boundaries.',
+        ),
+      ) : h('div',{style:{color:'var(--muted)',fontSize:'var(--fs-sm)',textAlign:'center',padding:'16px',lineHeight:'1.7'}},
+        h('div',{style:{fontSize:'var(--fs-md)',marginBottom:'6px'}},'Solver Convergence'),
+        'Shows log\u2081\u2080(residual) vs. CG iteration after solving.',
+      ),
+    ),
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN APPLICATION
+// ══════════════════════════════════════════════════════════════════════════════
+function App() {
+  // ── Navigation ──
+  const [page, setPage] = useState('intro');
+
+  // ── Material state ──
+  const [matIdx, setMatIdx] = useState(0); // Graphene default
+  const [customMat, setCustomMat] = useState({mu:3000, n:5e15, dim:'2D'});
+  const [Vg, setVg] = useState(null); // null = gate off, number = gate voltage
+
+  // Reset Vg when switching to non-gate material
+  useEffect(() => {
+    const mat = matIdx < MATERIALS.length ? MATERIALS[matIdx] : customMat;
+    if (!mat.gate && Vg !== null) setVg(null);
+  }, [matIdx]);
+
+  // ── Sensor state ──
+  const [sensMode, setSensMode] = useState('preset');
+  const [sensIdx, setSensIdx] = useState(1);
+  const [customSensor, setCustomSensor] = useState({size:10e-6, t:1e-6});
+
+  // ── Bead state ──
+  const [beadMode, setBeadMode] = useState('preset');
+  const [beadIdx, setBeadIdx] = useState(3); // M-280 default
+  const [customBead, setCustomBead] = useState({d:5e-6, mu_r:10});
+
+  // ── Sim params ──
+  const [vBias, setVBias] = useState(5);
+  const [B0, setB0] = useState(100);
+  const [chH, setChH] = useState(50);
+  const [flowVel, setFlowVel] = useState(1.0);
+  const [nBeads, setNBeads] = useState(10);
+  const [heightMode, setHeightMode] = useState('fixed');
+  const [fixedHeight, setFixedHeight] = useState(3);
+  const [minHeight, setMinHeight] = useState(2);
+  const [maxHeight, setMaxHeight] = useState(10);
+  const [threshold, setThreshold] = useState(1);
+  const [simState, setSimState] = useState('idle');
+  const [speed, setSpeed] = useState(5);
+  const [, forceUpdate] = useState(0);
+
+  // ── Active config ──
+  const isCustomMat = matIdx >= MATERIALS.length;
+  const activeMat = isCustomMat ? customMat : MATERIALS[matIdx];
+  const mp = useMemo(() => computeMatProps(activeMat, Vg), [activeMat.mu, activeMat.n, activeMat.dim, Vg]);
+  const sensor = sensMode === 'custom' ? customSensor : SENSOR_PRESETS[sensIdx];
+  const bead = beadMode === 'custom' ? customBead : BEAD_LIBRARY[beadIdx];
+
+  // ── Derived physics ──
+  const chH_m = chH * 1e-6;
+  const chW_m = sensor.size;
+  const B0_T = B0 * 1e-3;
+  const r_bead = bead.d / 2;
+  const vAvg = flowVel * 1e-3;
+  const mom = beadMoment(r_bead, bead.mu_r, B0_T);
+  const activeRH = mp.RH;
+  const activeSigma = mp.sigma;
+
+  const visLen = Math.max(vAvg * 5, sensor.size * 25, 500e-6);
+  const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
+  const SCENE_LEN = 30, SCENE_H = 4, SCENE_W = 3;
+  const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H / chH_m, scaleZ = SCENE_W / chW_m;
+  const beadSceneScale = SCENE_W / (sensor.size || 10e-6); // scale bead relative to sensor width
+  const rScene = Math.max(0.12, r_bead * beadSceneScale * 0.9);
+  const Q_uLmin = vAvg * chW_m * chH_m * 60 * 1e6;
+
+  // ── Refs ──
+  const sceneRef = useRef(null), sceneContRef = useRef(null);
+  const traceRef = useRef(null), traceContRef = useRef(null);
+  const simRef = useRef({beads:[], signalBuf:[], time:0, peakSignal:0, batchDone:false, pulseData:[]});
+
+  // ── Init 3D ──
+  useEffect(() => {
+    if (!sceneContRef.current || page !== 'simulator') return;
+    if (sceneRef.current) return; // already initialized
+    const sc = new FluidScene(sceneContRef.current);
+    sceneRef.current = sc;
+    return () => { sc.dispose(); sceneRef.current = null; };
+  }, [page]);
+
+  // ── Update geometry ──
+  useEffect(() => {
+    const sc = sceneRef.current; if (!sc) return;
+    sc.buildChannel(SCENE_LEN, SCENE_H, SCENE_W);
+    sc.buildSensor(SCENE_W, 0.15, SCENE_W);
+  }, [sensIdx, sensMode, customSensor.size, chH, page]);
+
+  // ── Batch control ──
+  function startBatch() {
+    const sim = simRef.current;
+    sim.beads = []; sim.signalBuf = []; sim.time = 0;
+    sim.peakSignal = 0; sim.batchDone = false; sim.pulseData = [];
+    for (let i = 0; i < nBeads; i++) {
+      const startX = -visLen/2 - r_bead*2 - i * beadSpacing;
+      let y = heightMode === 'fixed' ? fixedHeight * 1e-6 : (minHeight + Math.random() * (maxHeight - minHeight)) * 1e-6;
+      y = Math.max(y, r_bead + 0.1e-6);
+      const z = (Math.random() - 0.5) * chW_m * 0.4;
+      sim.beads.push({id:i+1, x:startX, y, z, active:true, passed:false, detected:false, peakDVH:0, currentDVH:0, height_um:y*1e6});
+    }
+    setSimState('running');
+  }
+
+  function resetSim() {
+    const sim = simRef.current;
+    sim.beads = []; sim.signalBuf = []; sim.time = 0;
+    sim.peakSignal = 0; sim.batchDone = false; sim.pulseData = [];
+    setSimState('idle'); forceUpdate(n => n + 1);
+  }
+
+  // ── Animation loop ──
+  useEffect(() => {
+    if (page !== 'simulator') return;
+    let raf, lastT = performance.now();
+    const sim = simRef.current;
+
+    function tick(now) {
+      const rawDt = (now - lastT) / 1000; lastT = now;
+      const dt = Math.min(rawDt, 0.05) * (simState === 'running' ? speed : 0);
+
+      if (simState === 'running') {
+        let anyActive = false;
+        const detZone = sensor.size * 10;
+        const noiseRMS = 0.15e-3 * vBias;
+        const maxV = heightMode === 'fixed' ? vAvg : 1.5 * vAvg;
+        const frameDx = maxV * dt;
+        const maxStep = sensor.size * 0.4;
+        const nSub = Math.max(1, Math.ceil(frameDx / maxStep));
+        const subDt = dt / nSub;
+
+        for (let step = 0; step < nSub; step++) {
+          for (const b of sim.beads) {
+            if (!b.active) continue;
+            const v = heightMode === 'fixed' ? vAvg : flowVelocity(b.y, chH_m, vAvg);
+            b.x += v * subDt;
+            if (heightMode !== 'fixed') b.y = Math.max(r_bead + 0.2e-6, b.y - 0.3e-6 * subDt);
+          }
+          let subTotal = 0;
+          for (const b of sim.beads) {
+            if (!b.active) continue;
+            if (Math.abs(b.x) < detZone) {
+              const Bz = volumeAvgBz(mom, b.x, b.z, b.y, sensor.size, sensor.t, 6, 1);
+              const dvh = Math.abs(activeRH * activeSigma * Bz * vBias);
+              b.currentDVH = dvh;
+              if (dvh > b.peakDVH) b.peakDVH = dvh;
+              if (!b.detected && dvh * 1000 > threshold) b.detected = true;
+              subTotal += dvh;
+            } else { b.currentDVH = 0; }
+          }
+          const noise = (Math.random() - 0.5) * 2 * noiseRMS;
+          const tSub = sim.time + (step + 1) * subDt;
+          sim.signalBuf.push({t:tSub, v:subTotal*1000, vn:(subTotal+noise)*1000});
+          if (subTotal*1000 > sim.peakSignal) sim.peakSignal = subTotal*1000;
+        }
+        while (sim.signalBuf.length > 3000) sim.signalBuf.shift();
+        sim.time += dt;
+        for (const b of sim.beads) {
+          if (!b.active) continue;
+          if (b.x > visLen/2 + r_bead * 4) { b.active = false; b.passed = true; }
+          else anyActive = true;
+        }
+        if (!anyActive && sim.beads.length > 0) {
+          sim.batchDone = true;
+          sim.pulseData = sim.beads.map(b => ({id:b.id, peakDVH:b.peakDVH*1000, detected:b.detected, height_um:b.height_um}));
+          setSimState('done');
+        }
+        forceUpdate(n => n + 1);
+      }
+
+      const sc = sceneRef.current;
+      if (sc) {
+        const positions = sim.beads.map(b => {
+          if (!b.active) return null;
+          return {sx:b.x*scaleX, sy:b.y*scaleY, sz:b.z*scaleZ, detected:b.detected, glow:Math.min(b.currentDVH*1000/20,1)};
+        });
+        sc.updateBeads(positions, rScene);
+        const maxSig = sim.beads.reduce((mx,b)=>Math.max(mx,b.currentDVH||0),0);
+        sc.setSensorGlow(Math.min(maxSig*1000/10,1));
+        sc.render();
+      }
+      drawTrace();
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [page, simState, speed, chH_m, chW_m, vAvg, mom, r_bead, sensor.size, sensor.t,
+      vBias, threshold, visLen, scaleX, scaleY, scaleZ, rScene, nBeads, beadSpacing, heightMode, activeRH, activeSigma]);
+
+  // ── Trace drawing ──
+  function drawTrace() {
+    const canvas = traceRef.current, cont = traceContRef.current;
+    if (!canvas || !cont) return;
+    const W = cont.clientWidth, H = cont.clientHeight;
+    if (canvas.width !== W*2 || canvas.height !== H*2) { canvas.width = W*2; canvas.height = H*2; }
+    const ctx = canvas.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0); ctx.clearRect(0, 0, W, H);
+    const sim = simRef.current;
+    const axFS = chartFS(W,'axisLabel'), tkFS = chartFS(W,'tickValue');
+    const yLabelW = axFS + 6;  // space for rotated Y-axis label + gap
+    const tickW = Math.round(tkFS * 4.2); // width of tick text like "5.0"
+    const tPadL = yLabelW + tickW + 8;
+    const pad = {top:28, bottom:Math.round(axFS * 2.4), left:tPadL, right:15};
+    const dW = W - pad.left - pad.right, dH = H - pad.top - pad.bottom;
+    const maxV = Math.max(threshold * 3, sim.peakSignal * 1.3, 5);
+    const buf = sim.signalBuf;
+    ctx.strokeStyle = '#1a2540'; ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 5; i++) {
+      const py = pad.top + dH * (1 - i/5);
+      ctx.beginPath(); ctx.moveTo(pad.left, py); ctx.lineTo(pad.left + dW, py); ctx.stroke();
+      ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'right';
+      const val = (i/5) * maxV;
+      ctx.fillText(val < 10 ? val.toFixed(1) : val.toFixed(0), pad.left - 4, py + 4);
+    }
+    const thY = pad.top + dH * (1 - threshold / maxV);
+    if (thY > pad.top && thY < pad.top + dH) {
+      ctx.strokeStyle = 'rgba(239,68,68,0.3)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(pad.left, thY); ctx.lineTo(pad.left + dW, thY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444'; ctx.font = chartFS(W,'threshold') + 'px DM Sans'; ctx.textAlign = 'left';
+      ctx.fillText('threshold', pad.left + 3, thY - 4);
+    }
+    if (buf.length > 1) {
+      ctx.strokeStyle = 'rgba(34,197,94,0.15)'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(Math.abs(buf[i].vn) / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(buf[i].v / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(34,197,94,0.07)'; ctx.lineWidth = 7; ctx.beginPath();
+      for (let i = 0; i < buf.length; i++) {
+        const px = pad.left + dW * (i / buf.length);
+        const py = pad.top + dH * (1 - Math.min(buf[i].v / maxV, 1));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+    ctx.save(); ctx.translate(Math.round(yLabelW / 2), pad.top + dH/2); ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('\u0394V_H (mV)', 0, 0); ctx.restore();
+    ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold ' + axFS + 'px DM Sans'; ctx.textAlign = 'center';
+    ctx.fillText('Time (s)', pad.left + dW/2, pad.top + dH + axFS + 6);
+    if (buf.length > 1) {
+      const tMax = buf[buf.length-1].t, tMin = buf[0].t;
+      ctx.fillStyle = '#cbd5e1'; ctx.font = chartFS(W,'tickValue') + 'px JetBrains Mono'; ctx.textAlign = 'center';
+      for (let i = 0; i <= 4; i++) {
+        const t = tMin + (tMax - tMin) * i / 4;
+        ctx.fillText(t.toFixed(1), pad.left + dW * (i / 4), pad.top + dH + chartFS(W,'tickValue') + 2);
+      }
+    }
+    if (simState === 'running') {
+      const nPassed = sim.beads.filter(b => b.passed).length;
+      ctx.fillStyle = '#06b6d4'; ctx.font = 'bold ' + chartFS(W,'title') + 'px DM Sans'; ctx.textAlign = 'right';
+      ctx.fillText(nPassed + '/' + sim.beads.length + ' passed', pad.left + dW - 2, pad.top - 6);
+    }
+    if (simState === 'done') {
+      ctx.fillStyle = '#06b6d4'; ctx.font = 'bold ' + chartFS(W,'title') + 'px DM Sans'; ctx.textAlign = 'right';
+      ctx.fillText('Batch complete \u2014 ' + sim.beads.length + ' beads', pad.left + dW - 2, pad.top - 6);
+    }
+  }
+
+  // ── Metrics ──
+  const sim = simRef.current;
+  const nDetected = sim.beads.filter(b => b.detected).length;
+  const pulses = sim.pulseData;
+  const detPulses = pulses.filter(p => p.detected);
+  const meanPeak = detPulses.length > 0 ? detPulses.reduce((s,p) => s + p.peakDVH, 0) / detPulses.length : 0;
+  const stdPeak = detPulses.length > 1 ? Math.sqrt(detPulses.reduce((s,p) => s + (p.peakDVH - meanPeak)**2, 0) / (detPulses.length - 1)) : 0;
+  const cvPeak = meanPeak > 0 ? (stdPeak / meanPeak * 100) : 0;
+
+  const fullPageMode = page !== 'simulator';
+  const showHeader = page !== 'intro';
+
+  if (page === 'intro') {
+    return h('div', {className:'app designer-mode', style:{gridTemplateRows:'1fr'}},
+      h(IntroPage, {onEnter: () => setPage('simulator')})
+    );
+  }
+
+  return h('div', {className:'app' + (fullPageMode ? ' designer-mode' : '')},
+    // ── Header ──
+    h('div', {className:'header'},
+      h('div', {className:'header-brand'},
+        h('h1', null, h('span', {className:'brand'}, '\u00B5Flow'), ' 3D Microfluidic Hall Sensor'),
+      ),
+      h('div', {className:'nav-tabs'},
+        h('button', {className:'nav-tab'+(page==='simulator'?' active':''), onClick:()=>setPage('simulator')}, '\u25b6 Simulator'),
+        h('button', {className:'nav-tab'+(page==='designer'?' active':''), onClick:()=>setPage('designer')}, '\u2699 Designer'),
+        h('button', {className:'nav-tab'+(page==='analysis'?' active':''), onClick:()=>setPage('analysis')}, '\ud83d\udcca Analysis'),
+        h('button', {className:'nav-tab'+(page==='theory'?' active':''), onClick:()=>setPage('theory')}, '\ud83d\udcd6 Theory'),
+        h('button', {className:'nav-tab'+(page==='fem'?' active':''), onClick:()=>setPage('fem')}, '\ud83d\udd2c FEM'),
+      ),
+      page === 'simulator' && h('div', {className:'header-metrics'},
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Material'),
+          h('div', {className:'metric-value', style:{color:isCustomMat?'#94a3b8':activeMat.color}}, isCustomMat?'Custom':activeMat.id==='graphene-hbn'?'Gr/hBN':activeMat.name.split(' ')[0])
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Status'),
+          h('span', {className:'status-badge '+simState}, simState === 'idle' ? 'IDLE' : simState === 'running' ? 'RUNNING' : 'COMPLETE')
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Detected'),
+          h('div', {className:'metric-value g'}, nDetected + '/' + nBeads)
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'Peak \u0394V\u2095'),
+          h('div', {className:'metric-value g'}, sim.peakSignal.toFixed(2) + ' mV')
+        ),
+        h('div', {className:'metric'},
+          h('div', {className:'metric-label'}, 'R\u2095\u00b7\u03c3'),
+          h('div', {className:'metric-value'}, fmtSci(activeRH * activeSigma, 2))
+        ),
+      ),
+    ),
+
+    h('div', {className:'app-copyright'}, '\u00A9 2025 Govindaraju & Hassan'),
+
+    // ── Page content ──
+    page === 'designer'
+      ? h(DesignerPage, {matIdx, setMatIdx, customMat, setCustomMat,
+          beadIdx, setBeadIdx, beadMode, setBeadMode, customBead, setCustomBead,
+          sensMode, setSensMode, sensIdx, setSensIdx, customSensor, setCustomSensor,
+          chH, setChH, flowVel, setFlowVel, B0, setB0, Vg, setVg,
+          goToSim: () => setPage('simulator')})
+      : page === 'analysis'
+      ? h(AnalysisPage, {matIdx, customMat, beadIdx, beadMode, customBead,
+          sensMode, sensIdx, customSensor, chH, flowVel, B0, vBias, threshold, fixedHeight, Vg})
+      : page === 'theory'
+      ? h(TheoryPage)
+      : page === 'fem'
+      ? h(FEMPage, {matIdx, customMat, beadIdx, beadMode, customBead,
+          sensMode, sensIdx, customSensor, B0, vBias, fixedHeight, Vg})
+      : h(React.Fragment, null,
+        // ── Sidebar ──
+        h('div', {className:'sidebar'},
+          // Material indicator
+          h('div', {className:'group'},
+            h('div', {className:'group-title mat'}, 'Sensor Material'),
+            h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
+              h('span', {style:{fontSize:'12px',fontWeight:600,color:isCustomMat?'#94a3b8':activeMat.color}},
+                isCustomMat ? 'Custom' : activeMat.name),
+              h('button', {className:'preset-btn', style:{fontSize:'8px'}, onClick:()=>setPage('designer')}, 'Change \u2192'),
+            ),
+            h('div', {className:'sim-info'},
+              h('div', null, h('b',null,'R\u2095 = '), fmtSci(activeRH)),
+              h('div', null, h('b',null,'\u03c3 = '), fmtSci(activeSigma), ' S/m'),
+              h('div', null, h('b',null,'|S\u1d62| = '), fmtSci(mp.SI), ' V/AT'),
+            ),
+            // Gate voltage control (2D gate-tunable materials only)
+            activeMat.gate && h('div', {style:{marginTop:'6px',paddingTop:'6px',borderTop:'1px solid var(--card-border)'}},
+              h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
+                h('span', {style:{fontSize:'9px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.5px',fontWeight:600}}, 'Gate Voltage'),
+                h('button', {className:'preset-btn', style:{fontSize:'8px',padding:'1px 6px'},
+                  onClick:()=>setVg(Vg === null ? 0 : null)},
+                  Vg === null ? 'Enable' : 'Off'),
+              ),
+              Vg !== null && h(Slider, {label:'V\u1d33', value:Vg, min:activeMat.gate.Vg_range[0], max:activeMat.gate.Vg_range[1],
+                step:Math.abs(activeMat.gate.Vg_range[1]-activeMat.gate.Vg_range[0])/100,
+                unit:' V', onChange:setVg, disabled:simState==='running'}),
+              Vg !== null && h('div', {className:'sim-info'},
+                h('div', null, h('b',null,'n(V\u1d33) = '), fmtSci(mp.n), ' m\u207b\u00b2'),
+                h('div', null, h('b',null,'V\u0043\u004e\u0050 = '), activeMat.gate.V_CNP, ' V'),
+              ),
+            ),
+          ),
+
+          // Sensor geometry
+          h('div', {className:'group'},
+            h('div', {className:'group-title'}, 'Sensor Geometry'),
+            h('div', {className:'mode-tabs', style:{marginBottom:'4px'}},
+              h('button', {className:'mode-tab'+(sensMode==='preset'?' active':''), disabled:simState==='running', onClick:()=>setSensMode('preset')}, 'Preset'),
+              h('button', {className:'mode-tab'+(sensMode==='custom'?' active':''), disabled:simState==='running', onClick:()=>setSensMode('custom')}, 'Custom'),
+            ),
+            sensMode === 'preset'
+              ? h('div', {className:'preset-row'}, SENSOR_PRESETS.map((s, i) =>
+                  h('button', {key:i, className:'preset-btn'+(sensIdx===i?' active':''),
+                    disabled:simState==='running', onClick:()=>setSensIdx(i)}, s.name+' ('+s.label+')')
+                ))
+              : h('div', null,
+                  h(NumField, {label:'Side w', value:+(customSensor.size*1e6).toFixed(1), unit:'\u00b5m', disabled:simState==='running',
+                    onChange:v=>setCustomSensor({...customSensor, size:v*1e-6})}),
+                  h(NumField, {label:'Thickness t', value:+(customSensor.t*1e6).toFixed(2), unit:'\u00b5m', disabled:simState==='running',
+                    onChange:v=>setCustomSensor({...customSensor, t:v*1e-6})}),
+                ),
+            h(Slider, {label:'Bias Voltage', value:vBias, min:1, max:10, step:0.5, unit:' V', onChange:setVBias, disabled:simState==='running'}),
+            h('div', {className:'sim-info'},
+              h('div', null, h('b',null,'Area: '), (sensor.size*1e6).toFixed(1), '\u00d7', (sensor.size*1e6).toFixed(1), ' \u00b5m\u00b2'),
+            ),
+          ),
+
+          // Channel
+          h('div', {className:'group'},
+            h('div', {className:'group-title ch'}, 'Microfluidic Channel'),
+            h(Slider, {label:'Channel height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running'}),
+            h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running'}),
+            h('div', {className:'sim-info'},
+              h('div', null, h('b',null,'Q: '), Q_uLmin < 0.001 ? Q_uLmin.toExponential(2) : Q_uLmin.toFixed(4), ' \u00b5L/min'),
+            ),
+          ),
+
+          // Bead
+          h('div', {className:'group'},
+            h('div', {className:'group-title bead'}, 'Magnetic Bead'),
+            h('div', {className:'mode-tabs', style:{marginBottom:'4px'}},
+              h('button', {className:'mode-tab'+(beadMode==='preset'?' active':''), disabled:simState==='running', onClick:()=>setBeadMode('preset')}, 'Library'),
+              h('button', {className:'mode-tab'+(beadMode==='custom'?' active':''), disabled:simState==='running', onClick:()=>setBeadMode('custom')}, 'Custom'),
+            ),
+            beadMode === 'preset'
+              ? h('div', {className:'preset-row'}, BEAD_LIBRARY.map((p, i) =>
+                  h('button', {key:p.id, className:'preset-btn'+(beadIdx===i?' active':''),
+                    disabled:simState==='running', onClick:()=>setBeadIdx(i)}, p.label)
+                ))
+              : h('div', null,
+                  h(NumField, {label:'Diameter', value:+(customBead.d*1e6).toFixed(2), unit:'\u00b5m', disabled:simState==='running',
+                    onChange:v=>setCustomBead({...customBead, d:v*1e-6})}),
+                  h(NumField, {label:'\u03bc\u1d63', value:customBead.mu_r, unit:'', disabled:simState==='running',
+                    onChange:v=>setCustomBead({...customBead, mu_r:v})}),
+                ),
+            h(Slider, {label:'Batch size N', value:nBeads, min:1, max:50, step:1, unit:'', onChange:setNBeads, disabled:simState==='running'}),
+            h('div', {className:'sim-info'},
+              h('div', null, h('b',null,'\u03c7\u2091\u1da0\u1da0 = '), (3*(bead.mu_r-1)/(bead.mu_r+2)).toFixed(3)),
+              h('div', null, h('b',null,'m = '), fmtSci(mom), ' A\u00b7m\u00b2'),
+            ),
+          ),
+
+          // Height mode
+          h('div', {className:'group'},
+            h('div', {className:'group-title'}, 'Height Above Sensor'),
+            h('div', {className:'mode-tabs'},
+              h('button', {className:'mode-tab'+(heightMode==='fixed'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed'),
+              h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random'),
+            ),
+            heightMode === 'fixed'
+              ? h(Slider, {label:'h (above sensor)', value:fixedHeight, min:0.5, max:30, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running'})
+              : h('div', null,
+                  h(Slider, {label:'Min h', value:minHeight, min:0.5, max:20, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running'}),
+                  h(Slider, {label:'Max h', value:maxHeight, min:1, max:40, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running'}),
+                ),
+          ),
+
+          // CHMA
+          h('div', {className:'group'},
+            h('div', {className:'group-title'}, 'Halbach Array'),
+            h(Slider, {label:'B\u2080 at sensor', value:B0, min:10, max:500, step:10, unit:' mT', onChange:setB0, disabled:simState==='running'}),
+          ),
+
+          // Detection threshold
+          h('div', {className:'group'},
+            h('div', {className:'group-title det'}, 'Detection'),
+            h(Slider, {label:'\u0394V\u2095 threshold', value:threshold, min:0.1, max:100, step:0.1, unit:' mV', onChange:setThreshold}),
+          ),
+
+          // Batch results
+          simState === 'done' && h('div', {className:'group'},
+            h('div', {className:'group-title'}, 'Batch Results'),
+            h('div', {className:'results-box'},
+              h('div', {className:'rtitle'}, 'Pulse Analysis \u2014 ' + nBeads + ' beads'),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'Detection'), h('span',{className:'val '+(nDetected===nBeads?'good':'warn')}, nDetected+'/'+nBeads+' ('+(nDetected/nBeads*100).toFixed(0)+'%)')),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'Mean peak'), h('span',{className:'val'}, meanPeak.toFixed(3)+' mV')),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'Std dev'), h('span',{className:'val'}, stdPeak.toFixed(4)+' mV')),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'CV'), h('span',{className:'val '+(cvPeak<5?'good':cvPeak<15?'warn':'r')}, cvPeak.toFixed(1)+'%')),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'Max peak'), h('span',{className:'val good'}, sim.peakSignal.toFixed(3)+' mV')),
+              h('div', {className:'row'}, h('span',{className:'lbl'},'Material'), h('span',{className:'val'}, isCustomMat?'Custom':activeMat.name)),
+            ),
+            h('button', {className:'export-csv-btn', onClick:() => {
+              const headers = ['Bead_ID', 'Height_um', 'Peak_DVH_mV', 'Detected'];
+              const rows = pulses.map(p => [p.id, p.height_um.toFixed(2), p.peakDVH.toFixed(6), p.detected ? 'Yes' : 'No']);
+              downloadCSV('uflow_batch_' + nBeads + 'beads.csv', headers, rows);
+            }}, '\u2913 Export Batch CSV'),
+            pulses.length > 0 && pulses.length <= 50 && h('div', {style:{maxHeight:'200px',overflowY:'auto',marginTop:'4px'}},
+              h('table', {className:'pulse-table'},
+                h('thead', null, h('tr', null, h('th',null,'#'), h('th',null,'r (\u00b5m)'), h('th',null,'Peak (mV)'), h('th',null,''))),
+                h('tbody', null, pulses.map(p =>
+                  h('tr', {key:p.id}, h('td',null,p.id), h('td',null,p.height_um.toFixed(1)),
+                    h('td',null,p.peakDVH.toFixed(3)),
+                    h('td',{className:p.detected?'det':'miss'}, p.detected?'\u2713':'\u2717'))
+                ))
+              )
+            ),
+          ),
+        ),
+
+        // ── 3D Scene ──
+        h('div', {className:'scene-container', ref:sceneContRef},
+          h('div', {className:'ctrl-bar'},
+            simState === 'idle' && h('button', {className:'ctrl-btn run', onClick:startBatch}, '\u25B6 Run Batch ('+nBeads+' beads)'),
+            simState === 'running' && h('button', {className:'ctrl-btn', onClick:()=>setSpeed(s=>s===1?2:s===2?5:s===5?10:1)}, 'Speed '+speed+'\u00D7'),
+            (simState === 'running' || simState === 'done') && h('button', {className:'ctrl-btn danger', onClick:resetSim}, 'Reset'),
+            simState === 'done' && h('button', {className:'ctrl-btn run', onClick:startBatch}, '\u21BB Re-run'),
+          ),
+        ),
+
+        // ── Signal Trace ──
+        h('div', {className:'trace-panel', ref:traceContRef},
+          h('div', {className:'trace-label'}, 'Real-time Hall Voltage \u2014 \u0394V\u2095(t)'),
+          h('canvas', {ref:traceRef}),
+        ),
+      ),
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
