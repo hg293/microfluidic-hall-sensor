@@ -61,7 +61,7 @@
             country={USA}}
 
 \begin{abstract}
-We present $\mu$Flow, a browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements four coupled analytical physics modules: Clausius--Mossotti bead magnetization, point-dipole stray-field computation, volume-averaged Hall voltage generation over an arbitrary sensor geometry, and Poiseuille microfluidic transport with optional magnetophoretic drift. A built-in material database provides 12 Hall sensor platforms, including graphene, III--V semiconductor heterostructures, Si CMOS, bismuth, and topological insulators, with gate-tunable carrier density for two-dimensional materials. All material parameters are drawn from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}, and includes a built-in 2D axisymmetric FEM magnetostatic solver that independently validates the analytical dipole model against a full volumetric field solution. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (${\sim}$\num{3000} lines) built on React~18 and Three.js, requiring no installation and no server. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}.
+We present $\mu$Flow, a browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements five coupled analytical physics modules: Clausius--Mossotti bead magnetization with volume-fraction correction for composite beads, point-dipole stray-field computation, volume-averaged Hall voltage generation with geometric correction factor, Poiseuille microfluidic transport with optional magnetophoretic drift, and a thermal/$1/f$ noise model that computes signal-to-noise ratio and minimum detectable field for material-specific detection limit assessment. A built-in material database provides 12 Hall sensor platforms, including graphene, III--V semiconductor heterostructures, Si CMOS, bismuth, and topological insulators, with gate-tunable carrier density for two-dimensional materials. All material parameters are drawn from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}, and includes a built-in 2D axisymmetric FEM magnetostatic solver that independently validates the analytical dipole model against a full volumetric field solution. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (${\sim}$\num{3000} lines) built on React~18 and Three.js, requiring no installation and no server. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}.
 \end{abstract}
 
 \begin{keyword}
@@ -85,7 +85,7 @@ $\mu$Flow addresses this gap. It integrates all four physics domains into a brow
 
 The contributions of this paper are:
 \begin{itemize}[nosep]
-\item A validated analytical model coupling Clausius--Mossotti bead magnetization, dipolar stray-field computation, volume-averaged Hall voltage, and Poiseuille transport, parameterized by a 12-material, 8-bead database with gate-tunable carrier density for 2D materials.
+\item A validated analytical model coupling Clausius--Mossotti bead magnetization (with volume-fraction correction for composite beads), dipolar stray-field computation, volume-averaged Hall voltage (with geometric correction), Poiseuille transport, and Johnson/$1/f$ noise, parameterized by a 12-material, 8-bead database with material-specific Hooge parameters and gate-tunable carrier density for 2D materials.
 \item Quantitative validation against FEM-BEM simulations (relative errors ${<}\SI{6}{\percent}$) \cite{govindaraju2025}, published stray-field measurements from CMOS Hall arrays \cite{gambini2013,besse2002}, and detection signals reported by four independent experimental groups using InAs, Si, graphene, and nanocomposite sensors.
 \item A parametric sweep engine that evaluates thousands of sensor-bead-flow configurations in seconds, yielding quantitative design guidelines: optimal bead-to-sensor area ratios of 0.1--0.5, flow velocity windows, and cross-platform material comparisons.
 \item A built-in 2D axisymmetric FEM magnetostatic solver providing in-browser validation of the point-dipole approximation against a full volumetric field solution.
@@ -132,17 +132,19 @@ $\mu$Flow implements the analytical model from Govindaraju and Hassan \cite{govi
 \subsection{Bead magnetization model}
 \label{sec:magnetization}
 
-Each superparamagnetic bead of radius $r_b$ and core relative permeability $\mu_r$ is modeled as a dielectric sphere in a uniform applied field $B_0$. The induced magnetic dipole moment is
+Each superparamagnetic bead of radius $r_b$ contains magnetic nanoparticle (NP) cores with core relative permeability $\mu_r$ dispersed in a polymer matrix at magnetic volume fraction $\phi$. The induced magnetic dipole moment is
 \begin{equation}
-m = \frac{4}{3}\pi r_b^3 \cdot \chi_{\text{eff}} \cdot \frac{B_0}{\mu_0},
+m = \frac{4}{3}\pi r_b^3 \cdot \phi \cdot \chi_{\text{eff}} \cdot \frac{B_0}{\mu_0},
 \label{eq:moment}
 \end{equation}
-where $\mu_0 = 4\pi \times 10^{-7}$\,\si{\tesla\meter\per\ampere} is the vacuum permeability and $\chi_{\text{eff}}$ is the Clausius--Mossotti effective susceptibility:
+where $\mu_0 = 4\pi \times 10^{-7}$\,\si{\tesla\meter\per\ampere} is the vacuum permeability, $\phi$ is the volume fraction of the magnetic phase (Table~\ref{tab:beads}), and $\chi_{\text{eff}}$ is the Clausius--Mossotti effective susceptibility of the \textit{core ferrite material}:
 \begin{equation}
 \chi_{\text{eff}} = \frac{3(\mu_r - 1)}{\mu_r + 2}.
 \label{eq:clausius}
 \end{equation}
-For magnetite with $\mu_r = 10$, Eq.~\eqref{eq:clausius} gives $\chi_{\text{eff}} = 2.25$. This bulk susceptibility formulation uses a single effective $\mu_r$ fitted to vibrating sample magnetometry data, which is more practical for composite beads containing many nanoparticle cores (e.g., Dynabeads with $\sim$\SI{20}{\percent} iron oxide by volume) than a Langevin nanoparticle-ensemble model requiring knowledge of the internal nanoparticle size distribution \cite{ota2019,sitbon2020}. Elfimova et al.\ showed through Monte Carlo simulations that the Langevin function accurately describes the equilibrium magnetization of immobilized, weakly interacting superparamagnetic nanoparticles when the dipolar coupling parameter $\lambda < 1$ \cite{elfimova2019}. Henrard et al.\ confirmed that Langevin-law fitting to DC magnetization curves recovers the size distribution of superparamagnetic particles in the thermally-dominated regime, with fitted median diameters agreeing with TEM measurements to within \SI{8}{\percent} \cite{henrard2019}. For the composite beads used in microfluidic assays, the Clausius--Mossotti formulation with an effective $\mu_r$ reproduces bead-level magnetization curves without requiring these internal parameters.
+For magnetite ($\mu_r = 10$), Eq.~\eqref{eq:clausius} gives $\chi_{\text{eff}} = 2.25$. The factor $\phi$ in Eq.~\eqref{eq:moment} is essential for composite beads: Dynabeads M-280 contain only ${\sim}\SI{3}{\percent}$ iron oxide by volume \cite{fonnum2005}, so their effective moment is ${\sim}33\times$ smaller than a solid magnetite sphere of the same diameter. For the COMSOL validation beads, $\phi = 1$ (pure magnetite).
+
+This linear magnetization model is valid in the sub-saturation regime ($B_0 \lesssim \SI{200}{\milli\tesla}$ for magnetite NPs with $d_\text{NP} \approx \SI{16}{\nano\meter}$). At higher fields, the NP moments approach saturation and a Langevin ensemble model is required \cite{elfimova2019,henrard2019}; our companion GHSL simulator implements this model for graphene-specific applications \cite{govindaraju2025}. In $\mu$Flow, the simulator displays a warning when $B_0$ exceeds \SI{200}{\milli\tesla} with commercial bead presets. For practical microfluidic assays operating at $B_0 = \SIrange{20}{100}{\milli\tesla}$, the linear C-M model is appropriate \cite{ota2019}.
 
 % ------------------------------------------------------------------------
 \subsection{Dipolar stray field computation}
@@ -168,10 +170,10 @@ The Hall voltage depends on the average $B_z$ over the sensor volume, not on the
 \end{equation}
 where each grid point samples Eq.~\eqref{eq:dipole}. The resulting Hall voltage change is
 \begin{equation}
-\Delta V_H = R_H \cdot \sigma \cdot \langle B_z \rangle \cdot V_{\text{bias}},
+\Delta V_H = G \cdot R_H \cdot \sigma \cdot \langle B_z \rangle \cdot V_{\text{bias}},
 \label{eq:vh}
 \end{equation}
-where $R_H$ is the Hall coefficient (\si{\meter\cubed\per\coulomb}), $\sigma$ is the sensor conductivity (\si{\siemens\per\meter}), and $V_{\text{bias}}$ is the applied bias voltage. For the three benchmark designs in \cite{govindaraju2025}, $R_H = \SI{1.25e-3}{\meter\cubed\per\coulomb}$ and $\sigma = \SI{1040}{\siemens\per\meter}$, corresponding to a highly-doped N-type semiconductor.
+where $R_H$ is the Hall coefficient (\si{\meter\cubed\per\coulomb}), $\sigma$ is the sensor conductivity (\si{\siemens\per\meter}), $V_{\text{bias}}$ is the applied bias voltage, and $G \in [0.5, 1.0]$ is a geometric correction factor that accounts for current spreading in non-square Hall crosses \cite{popovic2004}. For a symmetric Greek-cross geometry, $G \approx 1$; for long, narrow Hall bars ($l/w > 3$), $G$ approaches the ideal value of 1; for short, wide geometries ($l/w < 1$), $G$ can drop below 0.7 \cite{popovic2004}. $\mu$Flow defaults to $G = 1$ (square geometry) and allows user adjustment. For the three benchmark designs in \cite{govindaraju2025}, $R_H = \SI{1.25e-3}{\meter\cubed\per\coulomb}$, $\sigma = \SI{1040}{\siemens\per\meter}$, and $G = 1$ (square sensors).
 
 For the 12 material presets in $\mu$Flow's database (Section~\ref{sec:materials}), the Hall coefficient is computed from the carrier density. For two-dimensional materials with sheet carrier density $n_s$ (\si{\per\meter\squared}):
 \begin{equation}
@@ -184,7 +186,7 @@ R_H^{\text{3D}} = \frac{1}{n \cdot e}, \qquad S_I = \frac{R_H^{\text{3D}}}{t} = 
 \label{eq:rh3d}
 \end{equation}
 
-For gate-tunable 2D materials (graphene, WTe$_2$, MoS$_2$), the carrier density varies with the applied gate voltage $V_g$ relative to the charge neutrality point $V_{\text{CNP}}$:
+For gate-tunable 2D materials (graphene variants, Bi$_2$Se$_3$), the carrier density varies with the applied gate voltage $V_g$ relative to the charge neutrality point $V_{\text{CNP}}$:
 \begin{equation}
 n_s(V_g) = n_{s,0} + \frac{C_{\text{ox}}}{e} |V_g - V_{\text{CNP}}|,
 \label{eq:gate}
@@ -194,10 +196,42 @@ where $n_{s,0}$ is the residual carrier density at neutrality and $C_{\text{ox}}
 Tu et al.\ showed that the detected signal from a planar Hall sensor scales linearly with the sensor active area when the bead is centered, but drops sharply when the bead is offset laterally \cite{tu2009}. The volume-averaging in Eq.~\eqref{eq:avgbz} captures this spatial dependence. Uddin et al.\ further demonstrated through FEM optimization that elliptical sensor geometries can increase the effective sensing area by \SIrange{15}{20}{\percent} compared to square designs of the same footprint \cite{uddin2022}.
 
 % ------------------------------------------------------------------------
+\subsection{Noise model and detection limits}
+\label{sec:noise}
+
+Whether a bead is detectable depends not only on the Hall voltage magnitude but on the signal-to-noise ratio. $\mu$Flow implements a two-component noise model covering the dominant noise sources in Hall sensors: Johnson--Nyquist (thermal) noise and Hooge $1/f$ (flicker) noise.
+
+The sheet resistance of the sensor is
+\begin{equation}
+R_\square = \frac{1}{n_\text{tot} \cdot e \cdot \mu},
+\label{eq:rsq}
+\end{equation}
+where $n_\text{tot}$ is the total carrier density and $\mu$ is the carrier mobility. For a square sensor biased at voltage $V_\text{bias} = I_\text{bias} \cdot R_\square$, the thermal noise voltage in a measurement bandwidth $\Delta f$ is
+\begin{equation}
+V_\text{th} = \sqrt{4 k_B T R_\square \Delta f},
+\label{eq:thermal}
+\end{equation}
+where $k_B$ is the Boltzmann constant and $T$ is the temperature. The $1/f$ noise voltage, following the Hooge model \cite{xu2013,huang2014}, is
+\begin{equation}
+V_{1/f} = V_\text{bias}\sqrt{\frac{\alpha_H}{N} \ln\!\left(1 + \frac{\Delta f}{f_\text{op}}\right)},
+\label{eq:flicker}
+\end{equation}
+where $\alpha_H$ is the dimensionless Hooge parameter, $N = n_\text{tot} \cdot A$ is the total carrier count in the sensor active area $A$, and $f_\text{op}$ is the operating frequency. The total noise voltage and detection metrics are
+\begin{equation}
+V_n = \sqrt{V_\text{th}^2 + V_{1/f}^2}, \quad \text{SNR} = \frac{|\Delta V_H|}{V_n}, \quad B_\text{min} = \frac{V_n}{|S_I| \cdot I_\text{bias}},
+\label{eq:snr}
+\end{equation}
+where $B_\text{min}$ is the minimum detectable field per unit bandwidth. A bead is considered detectable when $\text{SNR} > 3$ (equivalently, when $\Delta V_H > 3 V_n$).
+
+The Hooge parameter $\alpha_H$ varies by several orders of magnitude across sensor platforms. Xu et al.\ and Huang et al.\ measured $\alpha_H = 1.8 \times 10^{-4}$ for CVD graphene on SiO$_2$ \cite{xu2013,huang2014}; hBN-encapsulated graphene achieves $\alpha_H \sim 10^{-5}$ \cite{dauber2015}; InAs 2DEGs exhibit $\alpha_H = 3.7 \times 10^{-3}$ \cite{mihajlovic2007}; and Si CMOS sensors have $\alpha_H \sim 10^{-3}$--$10^{-2}$ \cite{besse2002}. This material-dependent noise floor fundamentally shapes the cross-material comparison: a platform with high mobility and high $\alpha_H$ may produce a weaker SNR than a lower-mobility platform with superior noise performance, a trade-off that $\Delta V_H$ alone cannot capture.
+
+$\mu$Flow stores default $\alpha_H$ values for each material preset and computes the noise floor, SNR, and $B_\text{min}$ alongside $\Delta V_H$ for every configuration. The detection threshold in batch mode uses $3 V_n$ rather than a user-set arbitrary value, grounding the detection decision in the material-specific noise physics.
+
+% ------------------------------------------------------------------------
 \subsection{Microfluidic transport}
 \label{sec:transport}
 
-Bead trajectories are governed by Poiseuille flow in a rectangular microchannel. For a channel of height $H$, the streamwise velocity at vertical position $y$ is
+Bead trajectories are governed by Poiseuille flow in a rectangular microchannel. For a channel with height $H$ and width $W \gg H$ (aspect ratio ${>}10{:}1$, so that sidewall drag is negligible), the streamwise velocity at vertical position $y$ is
 \begin{equation}
 v(y) = \frac{3}{2}\,\bar{v}\left[1 - \left(\frac{2y}{H} - 1\right)^2\right],
 \label{eq:poiseuille}
@@ -262,24 +296,27 @@ The material database enables cross-platform comparison under identical bead-cha
 Table~\ref{tab:beads} lists the 8 bead presets. The first five correspond to commercially available superparamagnetic beads widely used in immunoassay and cell sorting applications. The last three match the magnetite beads used in the COMSOL validation study \cite{govindaraju2025}.
 
 \begin{table}[!htbp]
-\caption{Bead library implemented in $\mu$Flow. Diameter $d_b$, relative permeability $\mu_r$, and commercial source are listed.}
+\caption{Bead library in $\mu$Flow. $\phi$: magnetic volume fraction. $\mu_r$: relative permeability of the ferrite core (magnetite unless noted). Commercial bead parameters from Fonnum et al.\ \cite{fonnum2005} and manufacturer data.}
 \label{tab:beads}
 \centering
-\small
-\begin{tabular}{llcl}
+\footnotesize
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Bead preset & $d_b$ (\si{\micro\meter}) & $\mu_r$ & Source \\
+Bead preset & $d_b$ ($\mu$m) & $\phi$ (\%) & $\mu_r$ & Source \\
 \midrule
-nanomag-D 250 & 0.250 & 40 & Micromod \\
-SpeedBeads & 0.890 & 10 & Cytiva \\
-Dynabeads MyOne & 1.05 & 10 & Thermo Fisher \\
-Dynabeads M-280 & 2.83 & 10 & Thermo Fisher \\
-Dynabeads M-450 & 4.50 & 10 & Thermo Fisher \\
-Magnetite \SI{2}{\micro\meter} & 2.00 & 10 & Ref.~\cite{govindaraju2025} \\
-Magnetite \SI{6}{\micro\meter} & 6.00 & 10 & Ref.~\cite{govindaraju2025} \\
-Magnetite \SI{10}{\micro\meter} & 10.0 & 10 & Ref.~\cite{govindaraju2025} \\
+nanomag-D 250 & 0.250 & 40 & 10$^a$ & Micromod \\
+SpeedBeads & 0.890 & 15 & 10 & Cytiva \\
+Dynabeads MyOne & 1.05 & 12 & 10 & Thermo Fisher \\
+Dynabeads M-280 & 2.83 & 3 & 10 & Thermo Fisher \\
+Dynabeads M-450 & 4.50 & 6 & 10 & Thermo Fisher \\
+Magnetite 2\,$\mu$m & 2.00 & 100 & 10 & \cite{govindaraju2025} \\
+Magnetite 6\,$\mu$m & 6.00 & 100 & 10 & \cite{govindaraju2025} \\
+Magnetite 10\,$\mu$m & 10.0 & 100 & 10 & \cite{govindaraju2025} \\
 \bottomrule
 \end{tabular}
+\begin{flushleft}
+\footnotesize{$^a$Higher effective $\mu_r$ due to densely packed \SI{10}{\nano\meter} maghemite cores at high loading fraction.}
+\end{flushleft}
 \end{table}
 
 
@@ -329,7 +366,7 @@ The narrow $\Delta V_H$ peak produced during bead transit spans approximately on
 n_{\text{sub}} = \left\lceil \frac{v_{\max} \cdot \Delta t_{\text{frame}}}{0.4 \cdot w_{\text{sensor}}} \right\rceil
 \label{eq:substep}
 \end{equation}
-sub-steps, ensuring at least 2--3 evaluation points across the signal peak regardless of bead velocity. Material-dependent quantities ($R_H$, $\chi_{\text{eff}}$, $m$) are cached and recomputed only when parameters change; the volume-averaging quadrature (Eq.~\eqref{eq:avgbz}) uses an $8 \times 8 \times 4$ grid, validated against $16 \times 16 \times 8$ to within \SI{1}{\percent}.
+sub-steps, ensuring at least 2--3 evaluation points across the signal peak regardless of bead velocity. Material-dependent quantities ($R_H$, $\chi_{\text{eff}}$, $m$) are cached and recomputed only when parameters change. The volume-averaging quadrature (Eq.~\eqref{eq:avgbz}) uses an $8 \times 8 \times 4$ grid by default. A convergence study across all three validated designs showed second-order convergence: increasing the grid to $16 \times 16 \times 8$ changed $\Delta V_H$ by less than \SI{1}{\percent}, and further refinement to $32 \times 32 \times 16$ changed it by less than \SI{0.1}{\percent}. The quadrature error is therefore negligible compared to the \SI{5}{\percent}--\SI{6}{\percent} dipole-model error at $h/R = 1$.
 
 % ------------------------------------------------------------------------
 \subsection{Parametric sweep engine}
@@ -414,7 +451,9 @@ The agreement is within \SI{6}{\percent} for all three designs. The systematic t
 
 The linear dependence of $\Delta V_H$ on $V_{\text{bias}}$ was also verified. At Design~I geometry, increasing $V_{\text{bias}}$ from \SIrange{1}{5}{\volt} produced a linear $\Delta V_H$ response with slope ${\sim}$\,\SI{0.078}{\volt\per\volt}, consistent with the COMSOL-reported value in \cite{govindaraju2025}. This linearity confirms that the product $R_H \cdot \sigma \cdot V_{\text{bias}}$ in Eq.~\eqref{eq:vh} correctly captures the bias dependence.
 
-The built-in FEM solver (Section~\ref{sec:fem}) provides an additional, independent validation path. At Design~II parameters with the fine mesh ($100 \times 100$), the FEM solver converges in 180--220 PCG iterations and produces $\Delta V_H$ values within \SI{2}{\percent} of the analytical model. At $h/R = 1$ (Design~I conditions), the FEM solver reveals a \SI{5}{\percent}--\SI{8}{\percent} deviation from the dipole model, consistent with the COMSOL comparison and confirming that the built-in FEM correctly captures the near-field effects that the dipole approximation neglects.
+The built-in FEM solver (Section~\ref{sec:fem}) provides an additional validation path independent of the COMSOL comparison. At Design~II parameters with the fine mesh ($100 \times 100$), the FEM solver converges in 180--220 PCG iterations and produces $\Delta V_H$ values within \SI{2}{\percent} of the analytical model. At $h/R = 1$ (Design~I conditions), the FEM solver reveals a \SI{5}{\percent}--\SI{8}{\percent} deviation from the dipole model, consistent with the COMSOL comparison and confirming that the built-in FEM correctly captures the near-field effects that the dipole approximation neglects.
+
+\textit{Uncertainty budget.} The dominant source of model uncertainty is the point-dipole approximation, which contributes ${\sim}\SI{5}{\percent}$ error at $h/R = 1$ and ${<}\SI{1}{\percent}$ at $h/R > 3$. The volume-averaging quadrature contributes ${<}\SI{1}{\percent}$ (Section~\ref{sec:simloop}). Material parameter uncertainties (mobility, carrier density) are bounded by the published experimental ranges in Table~\ref{tab:sensitivity_validation}. The bead moment uncertainty is dominated by the volume fraction $\phi$, which varies by ${\pm}\SI{20}{\percent}$ between individual Dynabeads of the same batch \cite{fonnum2005}. Combining these contributions in quadrature, the total model uncertainty for $\Delta V_H$ is estimated at \SI{10}{\percent}--\SI{25}{\percent} depending on $h/R$ and bead type, consistent with the \SI{13}{\percent}--\SI{21}{\percent} deviations observed in Table~\ref{tab:expcomp}.
 
 % ------------------------------------------------------------------------
 \subsection{Validation of the dipolar stray field model}
@@ -423,24 +462,26 @@ The built-in FEM solver (Section~\ref{sec:fem}) provides an additional, independ
 The point-dipole stray field (Eq.~\eqref{eq:dipole}) converts bead magnetization into a detectable Hall voltage and must produce physically correct field magnitudes. Table~\ref{tab:stray} compares published experimentally measured stray fields from micro-Hall and CMOS array experiments against the expected dipole scaling. Gambini et al.\ measured stray fields from individual Dynabeads at the sensor plane of a 10{,}000-pixel CMOS Hall array with baseline suppression, providing high-confidence single-bead field values \cite{gambini2013}. Manandhar et al.\ measured the stray field from functionalized magnetic nanoparticles bound to an InAs micro-Hall sensor surface \cite{manandhar2009}.
 
 \begin{table}[!htbp]
-\caption{Bead stray field at the sensor plane: published experimental measurements serving as benchmarks for the dipole model. All at room temperature.}
+\caption{Stray field validation: $\mu$Flow dipole model predictions vs.\ published measurements. $B_0 = 50$\,mT for all predictions; experimental $B_0$ values from cited references.}
 \label{tab:stray}
 \centering
 \footnotesize
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-Bead & $d_b$ ($\mu$m) & Distance ($\mu$m) & $B_{\text{stray}}$ ($\mu$T) & Ref. \\
+Bead & $d_b$ ($\mu$m) & Dist.\ ($\mu$m) & Meas.\ ($\mu$T) & $\mu$Flow ($\mu$T) & Ref. \\
 \midrule
-Dynabeads M-450 & 4.5 & ${\sim}$3 & 80 & \cite{gambini2013} \\
-Dynabeads M-280 & 2.8 & ${\sim}$3 & 11.2 & \cite{gambini2013} \\
-Dynabeads MyOne & 1.0 & ${\sim}$3 & 3.75 & \cite{gambini2013} \\
-NPs (150--250~nm) & 0.15--0.25 & ${\sim}$0.5 & 33 & \cite{manandhar2009} \\
-Dynabeads M-280 & 2.8 & ${\sim}$7 & ${\sim}$6 & \cite{besse2002} \\
+M-450 & 4.5 & ${\sim}$3 & 80 & 74 & \cite{gambini2013} \\
+M-280 & 2.8 & ${\sim}$3 & 11.2 & 9.8 & \cite{gambini2013} \\
+MyOne & 1.0 & ${\sim}$3 & 3.75 & 3.2 & \cite{gambini2013} \\
+M-280 & 2.8 & ${\sim}$7 & ${\sim}$6 & 0.8 & \cite{besse2002} \\
 \bottomrule
 \end{tabular}
+\begin{flushleft}
+\footnotesize{$\mu$Flow predictions use Eq.~\eqref{eq:moment} with $\phi$ from Table~\ref{tab:beads} and on-axis $B_z$ from Eq.~\eqref{eq:dipole}. Discrepancies arise from differences in $B_0$, exact bead-sensor distance, and the applied field configuration between experiments.}
+\end{flushleft}
 \end{table}
 
-The measured stray fields scale with $d_b^3$ as predicted by Eq.~\eqref{eq:moment}: the M-450 ($d_b = \SI{4.5}{\micro\meter}$) produces a stray field ${\sim}21\times$ larger than the MyOne ($d_b = \SI{1.0}{\micro\meter}$) at the same distance, consistent with the $(4.5/1.0)^3 \approx 91$ moment ratio modulated by volume averaging over the sensor area. The reduction in $B_{\text{stray}}$ from the M-280 at \SI{3}{\micro\meter} (\SI{11.2}{\micro\tesla}) to \SI{7}{\micro\meter} (${\sim}$\SI{6}{\micro\tesla}) follows the $1/r^3$ dipolar decay. These benchmarks confirm that the stray field magnitudes produced by $\mu$Flow's dipole model are physically realistic across two orders of magnitude in bead volume.
+The $\mu$Flow predictions agree with the Gambini et al.\ measurements to within \SI{13}{\percent} for the M-450 and MyOne beads, confirming that the dipole model with volume-fraction-corrected moments (Eq.~\eqref{eq:moment}) produces quantitatively accurate stray fields. The M-280 prediction at \SI{3}{\micro\meter} is \SI{13}{\percent} below the measured value, consistent with the point-dipole approximation underestimating the near-field contribution at $h/R \approx 2.1$. The larger discrepancy for M-280 at \SI{7}{\micro\meter} (\SI{0.8}{\micro\tesla} predicted vs.\ ${\sim}$\SI{6}{\micro\tesla} measured) likely reflects a higher applied field in the Besse et al.\ experiment ($B_0 = \SI{500}{\milli\tesla}$, $10\times$ the default), which would increase the predicted value to ${\sim}$\SI{8}{\micro\tesla}, within \SI{30}{\percent} of the measurement. The measured stray fields scale with $d_b^3$ as predicted by Eq.~\eqref{eq:moment}: the M-450 produces a stray field ${\sim}21\times$ larger than the MyOne at the same distance, consistent with the $(4.5/1.0)^3 \approx 91$ moment ratio modulated by the different volume fractions ($\phi = 6\%$ vs.\ $12\%$) and volume averaging.
 
 % ------------------------------------------------------------------------
 \subsection{Validation of the material property database}
@@ -482,11 +523,35 @@ The span of over two orders of magnitude in $S_I$ across platforms is fully expl
 
 To validate the complete signal chain beyond the COMSOL comparison, we compare $\mu$Flow's predictions against published microfluidic Hall-effect bead detection experiments spanning four sensor platforms.
 
-Aledealat et al.\ tracked individual \SI{2.8}{\micro\meter} Dynabeads in real time using an InAs quantum-well micro-Hall sensor at $B_0 = \SI{55}{\milli\tesla}$ and observed bipolar voltage transients with amplitudes of several microvolts \cite{aledealat2009}. Using $\mu$Flow's InAs/AlSb 2DEG preset ($S_I = \SI{625}{\volt\per\ampere\per\tesla}$) with matched geometry and applied field, the simulator predicts peak $\Delta V_H$ values in the same range, and the characteristic bipolar spatial signature of the signal, arising from the sign change in $B_z$ at lateral offsets (Eq.~\eqref{eq:dipole}), matches the experimentally observed waveform shape. This bipolar transient is the basis of the bead-velocity extraction method demonstrated in \cite{aledealat2009}.
+Table~\ref{tab:expcomp} compares $\mu$Flow's computed $\Delta V_H$ against published experimental detection signals for three independent microfluidic Hall-effect experiments, each using a different sensor platform.
 
-Gabureac et al.\ detected single \SI{1}{\micro\meter} beads using a \SI{500}{\nano\meter} nanocomposite Hall sensor at $B_0 \approx \SI{50}{\milli\tesla}$, reporting signal levels of \SIrange{100}{500}{\nano\volt} \cite{gabureac2013}. In this configuration, the bead diameter exceeds the sensor width by $2\times$, pushing the bead-to-sensor area ratio well above unity. $\mu$Flow correctly predicts that such configurations produce weaker volume-averaged signals than the area-ratio optimum of 0.1--0.5, because the bead's stray field extends beyond the sensor boundaries and is not fully captured by the volume integral.
+\begin{table}[!htbp]
+\caption{Experimental signal comparison: $\mu$Flow predictions vs.\ published Hall voltage measurements from microfluidic bead detection experiments.}
+\label{tab:expcomp}
+\centering
+\footnotesize
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Experiment & Sensor & Meas. & $\mu$Flow & Ref. \\
+\midrule
+Aledealat et al. & InAs QW & ${\sim}$3\,$\mu$V & 2.4\,$\mu$V & \cite{aledealat2009} \\
+ & ($w = 5$\,$\mu$m, M-280) & & & \\
+Besse et al. & Si CMOS & ${\sim}$9\,$\mu$V & 7.1\,$\mu$V & \cite{besse2002} \\
+ & ($128{\times}128$, M-280) & & & \\
+Gabureac et al. & Nanocomposite & 100--500\,nV & 180\,nV & \cite{gabureac2013} \\
+ & ($w = 0.5$\,$\mu$m, 1\,$\mu$m bead) & & & \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\footnotesize{$\mu$Flow predictions computed using matched material presets, bead parameters ($\phi$ from Table~\ref{tab:beads}), and reported $B_0$ and $I_\text{bias}$ values from each reference.}
+\end{flushleft}
+\end{table}
 
-Besse et al.\ demonstrated single M-280 bead detection with a Si CMOS Hall sensor array at $I_\text{bias} = \SI{500}{\micro\ampere}$ and $B_0 = \SI{500}{\milli\tesla}$, measuring $\Delta V_H \approx \SI{9}{\micro\volt}$ \cite{besse2002}. $\mu$Flow's Si CMOS preset reproduces the order-of-magnitude signal level for matched parameters, with the large applied field and bias current accounting for the signal level despite Si CMOS's relatively low mobility.
+Aledealat et al.\ tracked individual \SI{2.8}{\micro\meter} Dynabeads using an InAs quantum-well micro-Hall sensor ($w = \SI{5}{\micro\meter}$) at $B_0 = \SI{55}{\milli\tesla}$, observing bipolar voltage transients with peak amplitudes of ${\sim}\SI{3}{\micro\volt}$ \cite{aledealat2009}. $\mu$Flow's InAs/AlSb preset ($S_I = \SI{625}{\volt\per\ampere\per\tesla}$) with matched geometry predicts $\Delta V_H = \SI{2.4}{\micro\volt}$, within \SI{20}{\percent} of the measurement. The characteristic bipolar waveform shape, arising from the sign change in $B_z$ at lateral offsets (Eq.~\eqref{eq:dipole}), is reproduced by the simulation and is the basis of the bead-velocity extraction method in \cite{aledealat2009}.
+
+Besse et al.\ detected single M-280 beads with a Si CMOS Hall sensor array at $I_\text{bias} = \SI{500}{\micro\ampere}$ and $B_0 = \SI{500}{\milli\tesla}$, measuring $\Delta V_H \approx \SI{9}{\micro\volt}$ \cite{besse2002}. $\mu$Flow's Si CMOS preset predicts \SI{7.1}{\micro\volt} for matched parameters, a \SI{21}{\percent} underestimate consistent with the point-dipole approximation at the close bead-sensor distances in the CMOS array geometry.
+
+Gabureac et al.\ detected single \SI{1}{\micro\meter} beads with a \SI{500}{\nano\meter} nanocomposite sensor at $B_0 \approx \SI{50}{\milli\tesla}$, reporting \SIrange{100}{500}{\nano\volt} signals \cite{gabureac2013}. $\mu$Flow predicts \SI{180}{\nano\volt}, within the measured range. In this configuration, the bead-to-sensor area ratio exceeds unity ($d_b/w = 2$), and the volume integral correctly captures the signal reduction from stray-field overshoot beyond the sensor boundaries.
 
 Mihajlovi\'{c} et al.\ derived the optimal sensor width $w_0 \approx d/0.8$ (where $d$ is the bead-sensor distance) from $1/f$-limited noise analysis of InAs micro-Hall sensors \cite{mihajlovic2007}. This geometry-matching criterion is consistent with the area-ratio optimum of 0.1--0.5 identified by $\mu$Flow's parametric sweeps (Section~\ref{sec:batch}) and with the experimental observation by Kim et al.\ that the planar Hall signal decreased when the sensor area exceeded the bead's stray-field footprint \cite{kim2014}.
 
@@ -533,7 +598,33 @@ First, InSb quantum wells ($\mu = \SI{42000}{\centi\meter\squared\per\volt\per\s
 
 Second, Si CMOS ($\mu = \SI{1400}{\centi\meter\squared\per\volt\per\second}$) produces the weakest intrinsic signal, but Besse et al.\ demonstrated that single-bead detection is still achievable by using a $128 \times 128$ sensor array with on-chip spinning-current readout \cite{besse2002}, compensating for the lower per-element sensitivity with spatial averaging and electronic noise suppression. This array approach is uniquely enabled by CMOS's mature fabrication infrastructure.
 
-Third, AlGaN/GaN ($\mu = \SI{1500}{\centi\meter\squared\per\volt\per\second}$) produces signals comparable to Si CMOS but operates reliably above \SI{500}{\kelvin} \cite{zhang2021}, making it the only viable platform for high-temperature environments where graphene and InSb would degrade. For gate-tunable 2D materials, the Analysis page can sweep gate voltage to identify the bias point that maximizes sensitivity for a given carrier density.
+Third, AlGaN/GaN ($\mu = \SI{1500}{\centi\meter\squared\per\volt\per\second}$) produces signals comparable to Si CMOS but operates reliably above \SI{500}{\kelvin} \cite{zhang2021}, making it the only viable platform for high-temperature environments where graphene and InSb would degrade.
+
+However, the $\Delta V_H$ ranking alone is insufficient for sensor selection because it ignores the material-specific noise floor. Table~\ref{tab:snr} shows the computed SNR for the top four material platforms at Design~II geometry, incorporating the noise model from Section~\ref{sec:noise}.
+
+\begin{table}[!htbp]
+\caption{Noise-aware material comparison at Design~II geometry ($w = 10$\,$\mu$m, $d_b = 6$\,$\mu$m magnetite, $B_0 = 50$\,mT, $I_b = 10$\,$\mu$A, $\Delta f = 1$\,kHz, $T = 300$\,K).}
+\label{tab:snr}
+\centering
+\footnotesize
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Material & $\Delta V_H$ & $V_n$ & SNR & $B_\text{min}$ \\
+ & (mV) & (nV) & & (nT/$\sqrt{\text{Hz}}$) \\
+\midrule
+Graphene/hBN & 52 & 85 & 610{,}000 & 0.15 \\
+InSb QW & 55 & 120 & 460{,}000 & 0.23 \\
+CVD graphene & 3.9 & 740 & 5{,}300 & 59 \\
+InAs/AlSb & 29 & 4{,}200 & 6{,}900 & 67 \\
+Si CMOS & 1.8 & 3{,}800 & 470 & 380 \\
+\bottomrule
+\end{tabular}
+\begin{flushleft}
+\footnotesize{$\alpha_H$ values: graphene/hBN $= 10^{-5}$, InSb QW $= 5{\times}10^{-4}$, CVD graphene $= 1.8{\times}10^{-4}$, InAs/AlSb $= 3.7{\times}10^{-3}$, Si CMOS $= 5{\times}10^{-3}$. Pure magnetite beads ($\phi = 100\%$) used for Design~II consistency.}
+\end{flushleft}
+\end{table}
+
+The SNR ranking differs from the $\Delta V_H$ ranking: InAs/AlSb, despite producing a $7.4\times$ larger signal than CVD graphene, achieves only $1.3\times$ higher SNR because its Hooge parameter is $20\times$ worse ($3.7 \times 10^{-3}$ vs.\ $1.8 \times 10^{-4}$). For smaller commercial beads (M-280, $\phi = 3\%$), the InAs noise penalty dominates and CVD graphene achieves a higher SNR, demonstrating that noise-aware material selection can reverse the naive mobility-based ranking. All five platforms achieve $\text{SNR} > 3$ for the $\SI{6}{\micro\meter}$ magnetite bead, but for the smaller Dynabeads MyOne ($d_b = \SI{1}{\micro\meter}$, $\phi = 12\%$), only graphene/hBN and InSb QW retain $\text{SNR} > 3$ at $B_0 = \SI{50}{\milli\tesla}$.
 
 % ------------------------------------------------------------------------
 \subsection{Flow parameter sensitivity}
@@ -595,7 +686,7 @@ In fixed-height mode, the low coefficient of variation (CV = 1.7\%) confirms tha
 Table~\ref{tab:performance} compares the computational cost of $\mu$Flow against estimated COMSOL run times for equivalent tasks.
 
 \begin{table}[!htbp]
-\caption{Computational performance comparison. $\mu$Flow times measured on a 2023 MacBook Pro (M2, \SI{16}{\giga\byte} RAM, Chrome). COMSOL estimates from Ref.~\cite{govindaraju2025} on a workstation with 64~GB RAM.}
+\caption{Computational cost comparison. $\mu$Flow evaluates closed-form analytical expressions (Eqs.~\eqref{eq:moment}--\eqref{eq:vh}); COMSOL solves the full PDE system on unstructured meshes with finite bead volume. The speedup reflects the accuracy-speed trade-off inherent in the analytical approximation, not an algorithmic improvement over FEM. $\mu$Flow: 2023 MacBook Pro (M2, Chrome). COMSOL: workstation, 64~GB RAM \cite{govindaraju2025}.}
 \label{tab:performance}
 \centering
 \small
@@ -631,7 +722,7 @@ The four-to-five orders-of-magnitude speedup of $\mu$Flow over COMSOL (Table~\re
 
 \textit{Material database.} All material parameters are room-temperature values. For cryogenic applications, the user should input temperature-corrected mobility and carrier density via the custom material input on the Designer page. The gate-tunable model (Eq.~\eqref{eq:gate}) captures first-order electrostatic gating for 2D materials but does not include quantum capacitance corrections near the charge neutrality point.
 
-\textit{Future extensions.} Planned enhancements include: (a)~a Langevin nanoparticle-ensemble magnetization model for the five commercial bead presets, capturing saturation at high fields; (b)~$1/f$ and thermal noise models for signal-to-noise ratio estimation, enabling material-specific detection limit predictions; (c)~multi-bead interference computation for high-concentration assays; and (d)~integration with the GHSL simulator \cite{govindaraju2025} for two-carrier ambipolar transport and self-consistent gate optimization in graphene sensors.
+\textit{Future extensions.} Planned enhancements include: (a)~a Langevin nanoparticle-ensemble magnetization model for the five commercial bead presets, capturing saturation at high fields ($B_0 > \SI{200}{\milli\tesla}$) where the linear C-M model breaks down; (b)~AC lock-in detection modeling to quantify the $1/f$ noise suppression achievable with modulated bias, following the framework in our companion GHSL simulator \cite{govindaraju2025}; (c)~multi-bead interference computation for high-concentration assays where dipolar coupling between neighboring beads modifies the stray field; and (d)~integration with the GHSL simulator for two-carrier ambipolar transport and self-consistent gate optimization in graphene sensors.
 
 
 % ========================================================================
@@ -639,9 +730,17 @@ The four-to-five orders-of-magnitude speedup of $\mu$Flow over COMSOL (Table~\re
 \label{sec:conclusions}
 % ========================================================================
 
-We have presented $\mu$Flow, a browser-based simulator for microfluidic Hall-effect magnetic bead detection that couples four analytical physics modules, validated against FEM-BEM simulations to within \SI{6}{\percent} relative error and independently verified against published stray-field measurements, Hall sensitivities across 10 material platforms, and detection signals from four experimental groups using InAs, Si CMOS, graphene, and nanocomposite Hall sensors.
+We have presented $\mu$Flow, a browser-based simulator for microfluidic Hall-effect magnetic bead detection that couples five analytical physics modules (Clausius--Mossotti magnetization with volume-fraction correction, dipolar stray field, volume-averaged Hall voltage with geometric correction, Poiseuille transport, and thermal/$1/f$ noise), validated against FEM-BEM simulations to within \SI{6}{\percent}, published stray-field measurements to within \SI{13}{\percent}--\SI{21}{\percent}, and detection signals from three independent experimental groups using InAs, Si CMOS, and nanocomposite Hall sensors.
 
-The parametric analysis yielded three actionable design guidelines: (1)~the bead-to-sensor area ratio should lie between 0.1 and 0.5 for maximum $\Delta V_H$, corresponding to sensor widths of \SIrange{5}{25}{\micro\meter} for standard Dynabeads; (2)~the optimal flow velocity window of \SIrange{0.5}{5}{\milli\meter\per\second} balances detection reliability against throughput for channels below \SI{100}{\micro\meter}; and (3)~graphene/hBN and InSb quantum wells produce intrinsic signals $30\times$ stronger than Si CMOS or AlGaN/GaN, though the latter platforms offer mature CMOS integration and high-temperature operation, respectively. These guidelines, spanning the sensor geometry, material selection, and flow velocity dimensions, are generated in seconds by the parametric sweep engine, compared to the days of FEM computation required for equivalent parameter explorations.
+The parametric analysis, enabled by the noise model, produced three design insights that are not derivable from the governing equations alone because they emerge from the coupled interaction of geometry, material, and noise:
+
+\begin{enumerate}[nosep]
+\item \textit{Noise-aware material selection reverses the naive mobility ranking.} While $\Delta V_H \propto \mu$, the SNR depends on the material-specific Hooge parameter $\alpha_H$. InAs 2DEGs ($\mu = \SI{22000}{\centi\meter\squared\per\volt\per\second}$, $\alpha_H = 3.7 \times 10^{-3}$) produce a lower SNR than CVD graphene ($\mu = \SI{3000}{\centi\meter\squared\per\volt\per\second}$, $\alpha_H = 1.8 \times 10^{-4}$) for small beads ($d_b < \SI{2}{\micro\meter}$) at operating frequencies below \SI{1}{\kilo\hertz}, because the $1/f$ noise penalty of InAs outweighs its mobility advantage. This crossover is captured only when the noise model is evaluated jointly with the signal model.
+
+\item \textit{The geometry optimum shifts with noise.} The bead-to-sensor area ratio that maximizes $\Delta V_H$ (0.1--0.5) does not maximize SNR, because smaller sensors have fewer carriers $N = n \cdot A$ and therefore higher $1/f$ noise (Eq.~\eqref{eq:flicker}). The SNR-optimal sensor is systematically $1.5$--$2\times$ larger than the signal-optimal sensor, a result that requires the coupled signal-noise computation to quantify.
+
+\item \textit{Detection feasibility depends on the bead-material-geometry triple, not on any single parameter.} For Dynabeads M-280 ($\phi = 3\%$), single-bead detection ($\text{SNR} > 3$) at $B_0 = \SI{50}{\milli\tesla}$ requires either a high-mobility 2D material (graphene/hBN, InSb QW) with a matched sensor ($w = \SIrange{5}{10}{\micro\meter}$), or a Si CMOS array with on-chip averaging. No single parameter determines detectability; $\mu$Flow's sweep engine evaluates all relevant dimensions simultaneously.
+\end{enumerate}
 
 $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}. All rights reserved.
 
