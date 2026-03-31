@@ -366,7 +366,7 @@ The narrow $\Delta V_H$ peak produced during bead transit spans approximately on
 n_{\text{sub}} = \left\lceil \frac{v_{\max} \cdot \Delta t_{\text{frame}}}{0.4 \cdot w_{\text{sensor}}} \right\rceil
 \label{eq:substep}
 \end{equation}
-sub-steps, ensuring at least 2--3 evaluation points across the signal peak regardless of bead velocity. Material-dependent quantities ($R_H$, $\chi_{\text{eff}}$, $m$) are cached and recomputed only when parameters change. The volume-averaging quadrature (Eq.~\eqref{eq:avgbz}) uses an $8 \times 8 \times 4$ grid by default. A convergence study across all three validated designs showed second-order convergence: increasing the grid to $16 \times 16 \times 8$ changed $\Delta V_H$ by less than \SI{1}{\percent}, and further refinement to $32 \times 32 \times 16$ changed it by less than \SI{0.1}{\percent}. The quadrature error is therefore negligible compared to the \SI{5}{\percent}--\SI{6}{\percent} dipole-model error at $h/R = 1$.
+sub-steps, ensuring at least 2--3 evaluation points across the signal peak regardless of bead velocity. Material-dependent quantities ($R_H$, $\chi_{\text{eff}}$, $m$) are cached and recomputed only when parameters change. The volume-averaging quadrature (Eq.~\eqref{eq:avgbz}) uses an $8 \times 8 \times 4$ grid by default. A convergence study at Design~II parameters showed monotonic convergence: the $8 \times 8 \times 4$ grid deviates by \SI{0.18}{\percent} from the $64 \times 64 \times 32$ reference, while $16 \times 16 \times 8$ deviates by \SI{0.04}{\percent} and $32 \times 32 \times 16$ by \SI{0.009}{\percent}. The quadrature error at the default resolution is therefore negligible compared to the \SI{5}{\percent}--\SI{6}{\percent} dipole-model error at $h/R = 1$.
 
 % ------------------------------------------------------------------------
 \subsection{Parametric sweep engine}
@@ -453,7 +453,7 @@ The linear dependence of $\Delta V_H$ on $V_{\text{bias}}$ was also verified. At
 
 The built-in FEM solver (Section~\ref{sec:fem}) provides an additional validation path independent of the COMSOL comparison. At Design~II parameters with the fine mesh ($100 \times 100$), the FEM solver converges in 180--220 PCG iterations and produces $\Delta V_H$ values within \SI{2}{\percent} of the analytical model. At $h/R = 1$ (Design~I conditions), the FEM solver reveals a \SI{5}{\percent}--\SI{8}{\percent} deviation from the dipole model, consistent with the COMSOL comparison and confirming that the built-in FEM correctly captures the near-field effects that the dipole approximation neglects.
 
-\textit{Uncertainty budget.} The dominant source of model uncertainty is the point-dipole approximation, which contributes ${\sim}\SI{5}{\percent}$ error at $h/R = 1$ and ${<}\SI{1}{\percent}$ at $h/R > 3$. The volume-averaging quadrature contributes ${<}\SI{1}{\percent}$ (Section~\ref{sec:simloop}). Material parameter uncertainties (mobility, carrier density) are bounded by the published experimental ranges in Table~\ref{tab:sensitivity_validation}. The bead moment uncertainty is dominated by the volume fraction $\phi$, which varies by ${\pm}\SI{20}{\percent}$ between individual Dynabeads of the same batch \cite{fonnum2005}. Combining these contributions in quadrature, the total model uncertainty for $\Delta V_H$ is estimated at \SI{10}{\percent}--\SI{25}{\percent} depending on $h/R$ and bead type, consistent with the \SI{13}{\percent}--\SI{21}{\percent} deviations observed in Table~\ref{tab:expcomp}.
+\textit{Uncertainty budget.} The dominant source of model uncertainty is the point-dipole approximation, which contributes ${\sim}\SI{5}{\percent}$ error at $h/R = 1$ and ${<}\SI{1}{\percent}$ at $h/R > 3$. The volume-averaging quadrature contributes ${<}\SI{1}{\percent}$ (Section~\ref{sec:simloop}). Material parameter uncertainties (mobility, carrier density) are bounded by the published experimental ranges in Table~\ref{tab:sensitivity_validation}. The bead moment uncertainty is dominated by the volume fraction $\phi$, which varies by ${\pm}\SI{20}{\percent}$ between individual Dynabeads of the same batch \cite{fonnum2005}. Combining these contributions in quadrature, the total model uncertainty for $\Delta V_H$ is estimated at \SI{10}{\percent}--\SI{25}{\percent} depending on $h/R$ and bead type.
 
 % ------------------------------------------------------------------------
 \subsection{Validation of the dipolar stray field model}
@@ -462,26 +462,23 @@ The built-in FEM solver (Section~\ref{sec:fem}) provides an additional validatio
 The point-dipole stray field (Eq.~\eqref{eq:dipole}) converts bead magnetization into a detectable Hall voltage and must produce physically correct field magnitudes. Table~\ref{tab:stray} compares published experimentally measured stray fields from micro-Hall and CMOS array experiments against the expected dipole scaling. Gambini et al.\ measured stray fields from individual Dynabeads at the sensor plane of a 10{,}000-pixel CMOS Hall array with baseline suppression, providing high-confidence single-bead field values \cite{gambini2013}. Manandhar et al.\ measured the stray field from functionalized magnetic nanoparticles bound to an InAs micro-Hall sensor surface \cite{manandhar2009}.
 
 \begin{table}[!htbp]
-\caption{Stray field validation: $\mu$Flow dipole model predictions vs.\ published measurements. $B_0 = 50$\,mT for all predictions; experimental $B_0$ values from cited references.}
+\caption{Published bead stray-field measurements at the sensor plane. These benchmark values serve as independent reference data for the dipole model.}
 \label{tab:stray}
 \centering
 \footnotesize
-\begin{tabular}{@{}lccccc@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Bead & $d_b$ ($\mu$m) & Dist.\ ($\mu$m) & Meas.\ ($\mu$T) & $\mu$Flow ($\mu$T) & Ref. \\
+Bead & $d_b$ ($\mu$m) & Dist.\ ($\mu$m) & $B_{\text{stray}}$ ($\mu$T) & Ref. \\
 \midrule
-M-450 & 4.5 & ${\sim}$3 & 80 & 74 & \cite{gambini2013} \\
-M-280 & 2.8 & ${\sim}$3 & 11.2 & 9.8 & \cite{gambini2013} \\
-MyOne & 1.0 & ${\sim}$3 & 3.75 & 3.2 & \cite{gambini2013} \\
-M-280 & 2.8 & ${\sim}$7 & ${\sim}$6 & 0.8 & \cite{besse2002} \\
+M-450 & 4.5 & ${\sim}$3 & 80 & \cite{gambini2013} \\
+M-280 & 2.8 & ${\sim}$3 & 11.2 & \cite{gambini2013} \\
+MyOne & 1.0 & ${\sim}$3 & 3.75 & \cite{gambini2013} \\
+M-280 & 2.8 & ${\sim}$7 & ${\sim}$6 & \cite{besse2002} \\
 \bottomrule
 \end{tabular}
-\begin{flushleft}
-\footnotesize{$\mu$Flow predictions use Eq.~\eqref{eq:moment} with $\phi$ from Table~\ref{tab:beads} and on-axis $B_z$ from Eq.~\eqref{eq:dipole}. Discrepancies arise from differences in $B_0$, exact bead-sensor distance, and the applied field configuration between experiments.}
-\end{flushleft}
 \end{table}
 
-The $\mu$Flow predictions agree with the Gambini et al.\ measurements to within \SI{13}{\percent} for the M-450 and MyOne beads, confirming that the dipole model with volume-fraction-corrected moments (Eq.~\eqref{eq:moment}) produces quantitatively accurate stray fields. The M-280 prediction at \SI{3}{\micro\meter} is \SI{13}{\percent} below the measured value, consistent with the point-dipole approximation underestimating the near-field contribution at $h/R \approx 2.1$. The larger discrepancy for M-280 at \SI{7}{\micro\meter} (\SI{0.8}{\micro\tesla} predicted vs.\ ${\sim}$\SI{6}{\micro\tesla} measured) likely reflects a higher applied field in the Besse et al.\ experiment ($B_0 = \SI{500}{\milli\tesla}$, $10\times$ the default), which would increase the predicted value to ${\sim}$\SI{8}{\micro\tesla}, within \SI{30}{\percent} of the measurement. The measured stray fields scale with $d_b^3$ as predicted by Eq.~\eqref{eq:moment}: the M-450 produces a stray field ${\sim}21\times$ larger than the MyOne at the same distance, consistent with the $(4.5/1.0)^3 \approx 91$ moment ratio modulated by the different volume fractions ($\phi = 6\%$ vs.\ $12\%$) and volume averaging.
+Direct quantitative comparison between $\mu$Flow's point-dipole predictions and these measurements is complicated by three factors: (a)~the Gambini values are volume-averaged over the CMOS pixel area, not on-axis peak values; (b)~the exact applied field $B_0$ and bead-sensor distance in each experiment are known only approximately; and (c)~the C-M model with a fixed $\mu_r$ does not capture the full magnetization curve of composite beads. Nevertheless, the measured stray fields exhibit the $d_b^3$ scaling predicted by Eq.~\eqref{eq:moment}: the M-450 produces a stray field ${\sim}21\times$ larger than the MyOne at the same distance, consistent with the $(4.5/1.0)^3 \approx 91$ moment ratio modulated by the different volume fractions ($\phi = 6\%$ vs.\ $12\%$). The $1/r^3$ decay from the M-280 at \SI{3}{\micro\meter} (\SI{11.2}{\micro\tesla}) to \SI{7}{\micro\meter} (${\sim}$\SI{6}{\micro\tesla}) is also consistent with the dipole model, noting that Besse et al.\ used $B_0 = \SI{500}{\milli\tesla}$ ($10\times$ higher than the Gambini experiments).
 
 % ------------------------------------------------------------------------
 \subsection{Validation of the material property database}
@@ -523,35 +520,13 @@ The span of over two orders of magnitude in $S_I$ across platforms is fully expl
 
 To validate the complete signal chain beyond the COMSOL comparison, we compare $\mu$Flow's predictions against published microfluidic Hall-effect bead detection experiments spanning four sensor platforms.
 
-Table~\ref{tab:expcomp} compares $\mu$Flow's computed $\Delta V_H$ against published experimental detection signals for three independent microfluidic Hall-effect experiments, each using a different sensor platform.
+To assess the complete signal chain beyond the COMSOL comparison, we compare $\mu$Flow's predictions qualitatively against three independent microfluidic bead detection experiments. Exact quantitative comparison is limited because the published reports do not always specify the precise bead-sensor distance, bias conditions, and sensor geometry needed to reproduce the measurement in $\mu$Flow; we therefore assess consistency of signal magnitude, scaling behavior, and waveform shape.
 
-\begin{table}[!htbp]
-\caption{Experimental signal comparison: $\mu$Flow predictions vs.\ published Hall voltage measurements from microfluidic bead detection experiments.}
-\label{tab:expcomp}
-\centering
-\footnotesize
-\begin{tabular}{@{}llccc@{}}
-\toprule
-Experiment & Sensor & Meas. & $\mu$Flow & Ref. \\
-\midrule
-Aledealat et al. & InAs QW & ${\sim}$3\,$\mu$V & 2.4\,$\mu$V & \cite{aledealat2009} \\
- & ($w = 5$\,$\mu$m, M-280) & & & \\
-Besse et al. & Si CMOS & ${\sim}$9\,$\mu$V & 7.1\,$\mu$V & \cite{besse2002} \\
- & ($128{\times}128$, M-280) & & & \\
-Gabureac et al. & Nanocomposite & 100--500\,nV & 180\,nV & \cite{gabureac2013} \\
- & ($w = 0.5$\,$\mu$m, 1\,$\mu$m bead) & & & \\
-\bottomrule
-\end{tabular}
-\begin{flushleft}
-\footnotesize{$\mu$Flow predictions computed using matched material presets, bead parameters ($\phi$ from Table~\ref{tab:beads}), and reported $B_0$ and $I_\text{bias}$ values from each reference.}
-\end{flushleft}
-\end{table}
+Aledealat et al.\ tracked individual \SI{2.8}{\micro\meter} Dynabeads (M-280) using an InAs quantum-well micro-Hall sensor ($w \approx \SI{5}{\micro\meter}$) at $B_0 = \SI{55}{\milli\tesla}$, observing bipolar voltage transients with peak amplitudes of ${\sim}\SI{3}{\micro\volt}$ \cite{aledealat2009}. $\mu$Flow's InAs/AlSb 2DEG preset ($S_I = \SI{625}{\volt\per\ampere\per\tesla}$) produces signals in the low-microvolt range for M-280 beads at comparable geometry, and the characteristic bipolar waveform shape, arising from the sign change in $B_z$ at lateral offsets (Eq.~\eqref{eq:dipole}), matches the experimentally observed transient that Aledealat et al.\ used for bead-velocity extraction.
 
-Aledealat et al.\ tracked individual \SI{2.8}{\micro\meter} Dynabeads using an InAs quantum-well micro-Hall sensor ($w = \SI{5}{\micro\meter}$) at $B_0 = \SI{55}{\milli\tesla}$, observing bipolar voltage transients with peak amplitudes of ${\sim}\SI{3}{\micro\volt}$ \cite{aledealat2009}. $\mu$Flow's InAs/AlSb preset ($S_I = \SI{625}{\volt\per\ampere\per\tesla}$) with matched geometry predicts $\Delta V_H = \SI{2.4}{\micro\volt}$, within \SI{20}{\percent} of the measurement. The characteristic bipolar waveform shape, arising from the sign change in $B_z$ at lateral offsets (Eq.~\eqref{eq:dipole}), is reproduced by the simulation and is the basis of the bead-velocity extraction method in \cite{aledealat2009}.
+Besse et al.\ detected single M-280 beads with a Si CMOS Hall sensor array ($128 \times 128$ pixels, $w \approx \SI{2.4}{\micro\meter}$) at $I_\text{bias} = \SI{500}{\micro\ampere}$ and $B_0 = \SI{500}{\milli\tesla}$, measuring $\Delta V_H \approx \SI{9}{\micro\volt}$ \cite{besse2002}. The $10\times$ higher applied field and $50\times$ higher bias current compared to $\mu$Flow's default configuration account for the detectable signal despite Si CMOS's low mobility ($\mu = \SI{1400}{\centi\meter\squared\per\volt\per\second}$). This experiment demonstrates that single-bead detection with low-sensitivity platforms is achievable through aggressive biasing and array-level signal processing.
 
-Besse et al.\ detected single M-280 beads with a Si CMOS Hall sensor array at $I_\text{bias} = \SI{500}{\micro\ampere}$ and $B_0 = \SI{500}{\milli\tesla}$, measuring $\Delta V_H \approx \SI{9}{\micro\volt}$ \cite{besse2002}. $\mu$Flow's Si CMOS preset predicts \SI{7.1}{\micro\volt} for matched parameters, a \SI{21}{\percent} underestimate consistent with the point-dipole approximation at the close bead-sensor distances in the CMOS array geometry.
-
-Gabureac et al.\ detected single \SI{1}{\micro\meter} beads with a \SI{500}{\nano\meter} nanocomposite sensor at $B_0 \approx \SI{50}{\milli\tesla}$, reporting \SIrange{100}{500}{\nano\volt} signals \cite{gabureac2013}. $\mu$Flow predicts \SI{180}{\nano\volt}, within the measured range. In this configuration, the bead-to-sensor area ratio exceeds unity ($d_b/w = 2$), and the volume integral correctly captures the signal reduction from stray-field overshoot beyond the sensor boundaries.
+Gabureac et al.\ detected single \SI{1}{\micro\meter} beads with a \SI{500}{\nano\meter} nanocomposite sensor at $B_0 \approx \SI{50}{\milli\tesla}$, reporting \SIrange{100}{500}{\nano\volt} signals \cite{gabureac2013}. In this configuration, the bead diameter exceeds the sensor width by $2\times$ ($d_b/w = 2$), and the stray field extends well beyond the sensor boundaries. $\mu$Flow's parametric sweeps confirm that such oversized bead-to-sensor ratios produce weaker volume-averaged signals than the area-ratio optimum of 0.1--0.5, consistent with the sub-microvolt signals observed.
 
 Mihajlovi\'{c} et al.\ derived the optimal sensor width $w_0 \approx d/0.8$ (where $d$ is the bead-sensor distance) from $1/f$-limited noise analysis of InAs micro-Hall sensors \cite{mihajlovic2007}. This geometry-matching criterion is consistent with the area-ratio optimum of 0.1--0.5 identified by $\mu$Flow's parametric sweeps (Section~\ref{sec:batch}) and with the experimental observation by Kim et al.\ that the planar Hall signal decreased when the sensor area exceeded the bead's stray-field footprint \cite{kim2014}.
 
@@ -603,28 +578,28 @@ Third, AlGaN/GaN ($\mu = \SI{1500}{\centi\meter\squared\per\volt\per\second}$) p
 However, the $\Delta V_H$ ranking alone is insufficient for sensor selection because it ignores the material-specific noise floor. Table~\ref{tab:snr} shows the computed SNR for the top four material platforms at Design~II geometry, incorporating the noise model from Section~\ref{sec:noise}.
 
 \begin{table}[!htbp]
-\caption{Noise-aware material comparison at Design~II geometry ($w = 10$\,$\mu$m, $d_b = 6$\,$\mu$m magnetite, $B_0 = 50$\,mT, $I_b = 10$\,$\mu$A, $\Delta f = 1$\,kHz, $T = 300$\,K).}
+\caption{Noise-aware material comparison at Design~II geometry ($w = 10$\,$\mu$m, $d_b = 6$\,$\mu$m magnetite ($\phi = 100\%$), $B_0 = 50$\,mT, $I_b = 10$\,$\mu$A, $\Delta f = 1$\,kHz, $T = 300$\,K). All values computed from Eqs.~\eqref{eq:vh}--\eqref{eq:snr}.}
 \label{tab:snr}
 \centering
 \footnotesize
-\begin{tabular}{@{}lcccc@{}}
+\begin{tabular}{@{}lccccc@{}}
 \toprule
-Material & $\Delta V_H$ & $V_n$ & SNR & $B_\text{min}$ \\
- & (mV) & (nV) & & (nT/$\sqrt{\text{Hz}}$) \\
+Material & $\alpha_H$ & $\Delta V_H$ & $V_n$ & SNR & $B_\text{min}$ \\
+ & & ($\mu$V) & (nV) & & (nT/$\sqrt{\text{Hz}}$) \\
 \midrule
-Graphene/hBN & 52 & 85 & 610{,}000 & 0.15 \\
-InSb QW & 55 & 120 & 460{,}000 & 0.23 \\
-CVD graphene & 3.9 & 740 & 5{,}300 & 59 \\
-InAs/AlSb & 29 & 4{,}200 & 6{,}900 & 67 \\
-Si CMOS & 1.8 & 3{,}800 & 470 & 380 \\
+Graphene/hBN & $10^{-5}$ & 392 & 190 & 2{,}060 & 106 \\
+InSb QW & $5{\times}10^{-4}$ & 86.3 & 105 & 820 & 266 \\
+CVD graphene & $1.8{\times}10^{-4}$ & 86.3 & 709 & 122 & 1{,}793 \\
+InAs/AlSb & $3.7{\times}10^{-3}$ & 43.1 & 159 & 271 & 806 \\
+Si CMOS$^a$ & $5{\times}10^{-3}$ & 86.3 & 7{,}444 & 12 & 18{,}831 \\
 \bottomrule
 \end{tabular}
 \begin{flushleft}
-\footnotesize{$\alpha_H$ values: graphene/hBN $= 10^{-5}$, InSb QW $= 5{\times}10^{-4}$, CVD graphene $= 1.8{\times}10^{-4}$, InAs/AlSb $= 3.7{\times}10^{-3}$, Si CMOS $= 5{\times}10^{-3}$. Pure magnetite beads ($\phi = 100\%$) used for Design~II consistency.}
+\footnotesize{$\alpha_H$ from \cite{dauber2015,gilbertson2011,xu2013,mihajlovic2007,besse2002}. $^a$Si CMOS with $t = 500$\,nm. $B_\text{min}$ per $\sqrt{\text{Hz}}$.}
 \end{flushleft}
 \end{table}
 
-The SNR ranking differs from the $\Delta V_H$ ranking: InAs/AlSb, despite producing a $7.4\times$ larger signal than CVD graphene, achieves only $1.3\times$ higher SNR because its Hooge parameter is $20\times$ worse ($3.7 \times 10^{-3}$ vs.\ $1.8 \times 10^{-4}$). For smaller commercial beads (M-280, $\phi = 3\%$), the InAs noise penalty dominates and CVD graphene achieves a higher SNR, demonstrating that noise-aware material selection can reverse the naive mobility-based ranking. All five platforms achieve $\text{SNR} > 3$ for the $\SI{6}{\micro\meter}$ magnetite bead, but for the smaller Dynabeads MyOne ($d_b = \SI{1}{\micro\meter}$, $\phi = 12\%$), only graphene/hBN and InSb QW retain $\text{SNR} > 3$ at $B_0 = \SI{50}{\milli\tesla}$.
+The SNR ranking reveals a key design insight that $\Delta V_H$ alone cannot capture. CVD graphene and InSb QW produce identical $\Delta V_H$ (\SI{86.3}{\micro\volt}) at Design~II geometry because $\Delta V_H = G \cdot \mu \cdot \langle B_z \rangle \cdot V_\text{bias}$ and their different mobilities are offset by different $V_\text{bias}$ values (which depend on $R_\square$). However, InSb QW achieves $6.7\times$ higher SNR (820 vs.\ 122) because its lower $R_\square$ (\SI{298}{\ohm}) produces less thermal noise, and its $\alpha_H$ ($5 \times 10^{-4}$) is comparable to CVD graphene's ($1.8 \times 10^{-4}$) despite the higher mobility. Graphene/hBN dominates both rankings due to its combination of high mobility, low carrier density (yielding large $S_I$), and low $\alpha_H$. Si CMOS, despite the same $\Delta V_H$ as CVD graphene and InSb QW, has an SNR of only 12 due to its large $\alpha_H = 5 \times 10^{-3}$ driving $V_{1/f} = \SI{7.4}{\micro\volt}$, confirming that single-bead detection with Si CMOS requires array-level signal processing as demonstrated by Besse et al.\ \cite{besse2002}.
 
 % ------------------------------------------------------------------------
 \subsection{Flow parameter sensitivity}
@@ -735,11 +710,11 @@ We have presented $\mu$Flow, a browser-based simulator for microfluidic Hall-eff
 The parametric analysis, enabled by the noise model, produced three design insights that are not derivable from the governing equations alone because they emerge from the coupled interaction of geometry, material, and noise:
 
 \begin{enumerate}[nosep]
-\item \textit{Noise-aware material selection reverses the naive mobility ranking.} While $\Delta V_H \propto \mu$, the SNR depends on the material-specific Hooge parameter $\alpha_H$. InAs 2DEGs ($\mu = \SI{22000}{\centi\meter\squared\per\volt\per\second}$, $\alpha_H = 3.7 \times 10^{-3}$) produce a lower SNR than CVD graphene ($\mu = \SI{3000}{\centi\meter\squared\per\volt\per\second}$, $\alpha_H = 1.8 \times 10^{-4}$) for small beads ($d_b < \SI{2}{\micro\meter}$) at operating frequencies below \SI{1}{\kilo\hertz}, because the $1/f$ noise penalty of InAs outweighs its mobility advantage. This crossover is captured only when the noise model is evaluated jointly with the signal model.
+\item \textit{Noise-aware material selection changes the platform ranking.} While $\Delta V_H$ is identical for CVD graphene and InSb QW at Design~II geometry (\SI{86.3}{\micro\volt}), the SNR differs by $6.7\times$ (820 vs.\ 122, Table~\ref{tab:snr}) because InSb's lower sheet resistance produces less thermal noise. Conversely, InAs/AlSb produces a lower SNR (271) than InSb QW (820) despite higher mobility, because its Hooge parameter is $7.4\times$ worse. These crossovers are captured only when the noise model is evaluated jointly with the signal model.
 
-\item \textit{The geometry optimum shifts with noise.} The bead-to-sensor area ratio that maximizes $\Delta V_H$ (0.1--0.5) does not maximize SNR, because smaller sensors have fewer carriers $N = n \cdot A$ and therefore higher $1/f$ noise (Eq.~\eqref{eq:flicker}). The SNR-optimal sensor is systematically $1.5$--$2\times$ larger than the signal-optimal sensor, a result that requires the coupled signal-noise computation to quantify.
+\item \textit{The geometry optimum shifts when noise is included.} The bead-to-sensor area ratio that maximizes $\Delta V_H$ (0.1--0.5) does not necessarily maximize SNR, because smaller sensors have fewer carriers $N = n \cdot A$ and therefore higher $1/f$ noise (Eq.~\eqref{eq:flicker}). The SNR-optimal sensor is larger than the signal-optimal sensor by an amount that depends on the material-specific $\alpha_H$, a trade-off that the parametric sweep engine can quantify for any material-bead combination.
 
-\item \textit{Detection feasibility depends on the bead-material-geometry triple, not on any single parameter.} For Dynabeads M-280 ($\phi = 3\%$), single-bead detection ($\text{SNR} > 3$) at $B_0 = \SI{50}{\milli\tesla}$ requires either a high-mobility 2D material (graphene/hBN, InSb QW) with a matched sensor ($w = \SIrange{5}{10}{\micro\meter}$), or a Si CMOS array with on-chip averaging. No single parameter determines detectability; $\mu$Flow's sweep engine evaluates all relevant dimensions simultaneously.
+\item \textit{Si CMOS requires array-level compensation for single-bead detection.} At Design~II geometry, Si CMOS achieves SNR $= 12$ for a \SI{6}{\micro\meter} pure magnetite bead (Table~\ref{tab:snr}), but for commercial Dynabeads M-280 ($\phi = 3\%$, ${\sim}33\times$ weaker moment), the per-element SNR drops below unity. This confirms quantitatively why Besse et al.\ required a $128 \times 128$ array with spinning-current readout for single M-280 detection \cite{besse2002}.
 \end{enumerate}
 
 $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}. All rights reserved.
