@@ -61,11 +61,11 @@
             country={USA}}
 
 \begin{abstract}
-We present $\mu$Flow, an open-source, browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements four coupled analytical physics modules: Clausius--Mossotti bead magnetization, point-dipole stray-field computation, volume-averaged Hall voltage generation over an arbitrary sensor geometry, and Poiseuille microfluidic transport with optional magnetophoretic drift. A built-in material database provides 12 Hall sensor platforms, including graphene, III--V semiconductor heterostructures, Si CMOS, bismuth, and topological insulators, with gate-tunable carrier density for two-dimensional materials. All material parameters are drawn from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}, and includes a built-in 2D axisymmetric FEM magnetostatic solver that independently validates the analytical dipole model against a full volumetric field solution. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (${\sim}$\num{3000} lines) built on React~18 and Three.js, requiring no installation, no server, and no license. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app} and released under the MIT license.
+We present $\mu$Flow, a browser-based simulator that models the complete signal chain of microfluidic Hall-effect magnetic bead detection in an interactive three-dimensional environment. The tool implements four coupled analytical physics modules: Clausius--Mossotti bead magnetization, point-dipole stray-field computation, volume-averaged Hall voltage generation over an arbitrary sensor geometry, and Poiseuille microfluidic transport with optional magnetophoretic drift. A built-in material database provides 12 Hall sensor platforms, including graphene, III--V semiconductor heterostructures, Si CMOS, bismuth, and topological insulators, with gate-tunable carrier density for two-dimensional materials. All material parameters are drawn from peer-reviewed experimental data. $\mu$Flow reproduces finite-element method (FEM) benchmarks from our companion COMSOL study to within \SI{6}{\percent} relative error for three sensor designs spanning \SIrange{5}{50}{\micro\meter}, and includes a built-in 2D axisymmetric FEM magnetostatic solver that independently validates the analytical dipole model against a full volumetric field solution. A parametric sweep engine evaluates sensor geometry, material selection, flow velocity, and bead properties across thousands of configurations in seconds. The entire application is a single HTML file (${\sim}$\num{3000} lines) built on React~18 and Three.js, requiring no installation and no server. $\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}.
 \end{abstract}
 
 \begin{keyword}
-microfluidic simulation \sep Hall effect sensor \sep magnetic bead detection \sep parametric optimization \sep browser-based visualization \sep open-source software \sep biosensor design
+microfluidic simulation \sep Hall effect sensor \sep magnetic bead detection \sep parametric optimization \sep browser-based visualization \sep biosensor design
 \end{keyword}
 
 \end{frontmatter}
@@ -79,7 +79,7 @@ microfluidic simulation \sep Hall effect sensor \sep magnetic bead detection \se
 
 Microfluidic Hall-effect sensors detect individual superparamagnetic beads by measuring the transient stray magnetic field as labeled analytes flow past a thin-film Hall element embedded in a microchannel floor. This approach has been demonstrated across multiple sensor platforms: Ejsing et al.\ measured \SI{0.3}{\micro\volt} signals from \SI{2}{\micro\meter} beads with a planar Hall sensor \cite{ejsing2004}; Aledealat et al.\ tracked individual \SI{2.8}{\micro\meter} Dynabeads in real time with an InAs quantum-well micro-Hall sensor, extracting bead velocity from the bipolar voltage transient \cite{aledealat2009}; Shah et al.\ integrated CVD graphene Hall sensors ($S_I = \SI{175}{\volt\per\ampere\per\tesla}$) into a PDMS microchannel for bead detection in whole blood \cite{shah2023}; and Gabureac et al.\ resolved single \SI{1}{\micro\meter} beads with a \SI{500}{\nano\meter} nanocomposite Hall sensor \cite{gabureac2013}. The diversity of viable platforms, which now spans graphene \cite{dauber2015,kaidarova2021}, III--V semiconductors \cite{mihajlovic2005,gilbertson2011}, Si CMOS \cite{besse2002}, and topological insulators \cite{saeed2024}, makes the material selection problem nontrivial because the detected signal depends on the coupled interaction of at least four physics domains.
 
-The design challenge arises because: (a)~the magnetization of the bead in the applied field depends on its ferrite content and effective susceptibility through the Clausius--Mossotti relation; (b)~the spatial distribution of the bead's dipolar stray field decays as $1/r^3$ and changes sign at lateral offsets; (c)~the Hall voltage is produced by averaging this inhomogeneous field over the sensor active volume, so the signal depends jointly on bead size and sensor footprint; and (d)~the hydrodynamic transport determines the bead trajectory and transit time through the sensing zone via the Poiseuille velocity profile. Commercial finite-element tools such as COMSOL Multiphysics can model each of these domains, but setting up a coupled magnetostatic-hydrodynamic simulation requires a software license (typically \$3{,}000--\$8{,}000 per year) and hours of computation per parameter sweep. Our companion study used a COMSOL FEM-BEM model to compare three sensor geometries and four semiconductor platforms, requiring over 200 individual simulations \cite{govindaraju2025}. Jebari et al.\ reported that their 3D multiphysics simulation of a microfluidic immunosensor required coupled Navier--Stokes, convection-diffusion, and magnetostatic solvers across multiple geometry variants, each taking tens of minutes per configuration \cite{jebari2024}. No open-source, interactive alternative existed for rapid exploration of this design space.
+The design challenge arises because: (a)~the magnetization of the bead in the applied field depends on its ferrite content and effective susceptibility through the Clausius--Mossotti relation; (b)~the spatial distribution of the bead's dipolar stray field decays as $1/r^3$ and changes sign at lateral offsets; (c)~the Hall voltage is produced by averaging this inhomogeneous field over the sensor active volume, so the signal depends jointly on bead size and sensor footprint; and (d)~the hydrodynamic transport determines the bead trajectory and transit time through the sensing zone via the Poiseuille velocity profile. Commercial finite-element tools such as COMSOL Multiphysics can model each of these domains, but setting up a coupled magnetostatic-hydrodynamic simulation requires a software license (typically \$3{,}000--\$8{,}000 per year) and hours of computation per parameter sweep. Our companion study used a COMSOL FEM-BEM model to compare three sensor geometries and four semiconductor platforms, requiring over 200 individual simulations \cite{govindaraju2025}. Jebari et al.\ reported that their 3D multiphysics simulation of a microfluidic immunosensor required coupled Navier--Stokes, convection-diffusion, and magnetostatic solvers across multiple geometry variants, each taking tens of minutes per configuration \cite{jebari2024}. No freely accessible, interactive alternative existed for rapid exploration of this design space.
 
 $\mu$Flow addresses this gap. It integrates all four physics domains into a browser-based simulator with real-time 3D visualization, a parametric sweep engine for automated design optimization, and a built-in FEM solver for independent model validation. The tool serves researchers exploring sensor design trade-offs before fabrication, educators teaching biosensor physics without commercial FEM licenses, and developers of lab-on-chip diagnostic platforms where magnetic bead-based immunoassays are under active development for point-of-care applications \cite{tymm2020,coarsey2019,kabir2020,bhalla2013}.
 
@@ -94,11 +94,11 @@ The contributions of this paper are:
 Table~\ref{tab:comparison} compares $\mu$Flow against available alternatives. The MMFT simulator \cite{emmerich2024} models microfluidic networks but excludes magnetic sensing; nanoHUB BioSensorLab \cite{nanohub} models electrostatic FET biosensors rather than magnetic bead detection. Browser-based scientific tools have been shown to lower adoption barriers compared to installed software \cite{stein2023,gurvich2022}. $\mu$Flow is the only tool that combines Hall sensor physics, microfluidic transport, 3D visualization, parametric sweeps, and FEM validation in a zero-install package.
 
 \begin{table}[!htbp]
-\caption{Comparison of $\mu$Flow with existing simulation tools for microfluidic biosensor design. A checkmark (\checkmark) indicates the feature is supported; a dash (--) indicates it is not.}
+\caption{Comparison of $\mu$Flow with existing simulation tools. \checkmark\ = supported; -- = not supported.}
 \label{tab:comparison}
 \centering
-\small
-\begin{tabular}{lccccc}
+\footnotesize
+\begin{tabular}{@{}lccccc@{}}
 \toprule
 Feature & $\mu$Flow & COMSOL & MATLAB & MMFT & BioSensorLab \\
 \midrule
@@ -113,7 +113,6 @@ Material database (12+)      & \checkmark & -- & -- & -- & -- \\
 Gate-tunable materials       & \checkmark & -- & -- & -- & -- \\
 Built-in FEM validation      & \checkmark & N/A & -- & -- & -- \\
 Browser-based (no install)   & \checkmark & -- & -- & -- & \checkmark$^c$ \\
-Open source                  & \checkmark & -- & -- & \checkmark & -- \\
 Free                         & \checkmark & -- & -- & \checkmark & \checkmark \\
 \bottomrule
 \end{tabular}
@@ -226,37 +225,37 @@ The applied field $B_0$ is generated by a cylindrical Halbach magnet array (CHMA
 
 $\mu$Flow includes 12 Hall sensor material presets spanning five technology families (Table~\ref{tab:materials}). Each preset specifies the carrier mobility $\mu$, carrier density ($n_s$ for 2D or $n$ for 3D), and dimensionality. All parameter values were extracted from peer-reviewed publications as indicated. For gate-tunable 2D materials (graphene variants, Bi$_2$Se$_3$), the user can apply a gate voltage via Eq.~\eqref{eq:gate} to shift the operating point along the sensitivity-noise trade-off curve.
 
-\begin{table}[!htbp]
-\caption{Material property database implemented in $\mu$Flow. Mobility $\mu$, carrier density ($n_s$ or $n$), and current-related sensitivity $S_I$ are listed. For 2D materials, $S_I = 1/(n_s e)$. For 3D materials, $S_I$ depends on the film thickness $t$; the Hall coefficient $R_H = 1/(ne)$ is given instead. All values at room temperature unless noted.}
+\begin{table*}[!htbp]
+\caption{Material property database implemented in $\mu$Flow. For 2D materials, $S_I = 1/(n_s e)$. For 3D materials, $R_H = 1/(ne)$. All values at room temperature.}
 \label{tab:materials}
 \centering
-\small
-\begin{tabular}{llccl}
+\footnotesize
+\begin{tabular}{@{}llccc@{}}
 \toprule
-Material & $\mu$ (\si{\centi\meter\squared\per\volt\per\second}) & Carrier density & $S_I$ or $R_H$ & Refs. \\
+Material & $\mu$ (cm$^2$/Vs) & Carrier density & $S_I$ (V/AT) or $R_H$ (m$^3$/C) & Refs. \\
 \midrule
-\multicolumn{5}{l}{\textit{Graphene family (2D, gate-tunable)}} \\
-Graphene CVD & 3{,}000 & $n_s = \SI{5e15}{\per\meter\squared}$ & \SI{1250}{\volt\per\ampere\per\tesla} & \cite{xu2013,huang2014} \\
-Graphene/hBN & 40{,}000 & $n_s = \SI{1.1e15}{\per\meter\squared}$ & \SI{5700}{\volt\per\ampere\per\tesla} & \cite{dauber2015,ouaj2025} \\
-Graphene/SiC & 3{,}000 & $n_s = \SI{7.5e16}{\per\meter\squared}$ & \SI{83}{\volt\per\ampere\per\tesla} & \cite{ciuk2019,panchal2012} \\
+\multicolumn{5}{@{}l}{\textit{Graphene family (2D, gate-tunable)}} \\
+Graphene CVD & 3{,}000 & $n_s = 5\times10^{15}$\,m$^{-2}$ & $S_I = 1250$ & \cite{xu2013,huang2014} \\
+Graphene/hBN & 40{,}000 & $n_s = 1.1\times10^{15}$\,m$^{-2}$ & $S_I = 5700$ & \cite{dauber2015,ouaj2025} \\
+Graphene/SiC & 3{,}000 & $n_s = 7.5\times10^{16}$\,m$^{-2}$ & $S_I = 83$ & \cite{ciuk2019,panchal2012} \\
 \midrule
-\multicolumn{5}{l}{\textit{III--V semiconductors (2D)}} \\
-GaAs/AlGaAs 2DEG & 7{,}000 & $n_s = \SI{5e15}{\per\meter\squared}$ & \SI{1250}{\volt\per\ampere\per\tesla} & \cite{haned2003,kunets2008,boero2003} \\
-AlGaN/GaN 2DEG & 1{,}500 & $n_s = \SI{1e17}{\per\meter\squared}$ & \SI{62.5}{\volt\per\ampere\per\tesla} & \cite{zhang2021,koide2012} \\
-InAs/AlSb 2DEG & 22{,}000 & $n_s = \SI{1e16}{\per\meter\squared}$ & \SI{625}{\volt\per\ampere\per\tesla} & \cite{mihajlovic2005,boero2003,heremans1993} \\
-InSb QW & 42{,}000 & $n_s = \SI{5e15}{\per\meter\squared}$ & \SI{1250}{\volt\per\ampere\per\tesla} & \cite{gilbertson2011,kunets2009,sandhu2004} \\
+\multicolumn{5}{@{}l}{\textit{III--V semiconductors (2D)}} \\
+GaAs/AlGaAs 2DEG & 7{,}000 & $n_s = 5\times10^{15}$\,m$^{-2}$ & $S_I = 1250$ & \cite{haned2003,kunets2008,boero2003} \\
+AlGaN/GaN 2DEG & 1{,}500 & $n_s = 1\times10^{17}$\,m$^{-2}$ & $S_I = 62.5$ & \cite{zhang2021,koide2012} \\
+InAs/AlSb 2DEG & 22{,}000 & $n_s = 1\times10^{16}$\,m$^{-2}$ & $S_I = 625$ & \cite{mihajlovic2005,boero2003,heremans1993} \\
+InSb QW & 42{,}000 & $n_s = 5\times10^{15}$\,m$^{-2}$ & $S_I = 1250$ & \cite{gilbertson2011,kunets2009,sandhu2004} \\
 \midrule
-\multicolumn{5}{l}{\textit{III--V semiconductors (3D)}} \\
-InSb MBE & 35{,}000 & $n = \SI{2e22}{\per\meter\cubed}$ & $R_H = \SI{3.1e-4}{\meter\cubed\per\coulomb}$ & \cite{togawa2005,okamoto2003,sandhu2004,kazakova2009} \\
-InAs film & 22{,}000 & $n = \SI{1.5e23}{\per\meter\cubed}$ & $R_H = \SI{4.2e-5}{\meter\cubed\per\coulomb}$ & \cite{boero2003,heremans1993,mihajlovic2005} \\
+\multicolumn{5}{@{}l}{\textit{III--V semiconductors (3D)}} \\
+InSb MBE & 35{,}000 & $n = 2\times10^{22}$\,m$^{-3}$ & $R_H = 3.1\times10^{-4}$ & \cite{togawa2005,okamoto2003,sandhu2004,kazakova2009} \\
+InAs film & 22{,}000 & $n = 1.5\times10^{23}$\,m$^{-3}$ & $R_H = 4.2\times10^{-5}$ & \cite{boero2003,heremans1993,mihajlovic2005} \\
 \midrule
-\multicolumn{5}{l}{\textit{Other platforms}} \\
-Si CMOS & 1{,}400 & $n = \SI{1e22}{\per\meter\cubed}$ & $R_H = \SI{6.3e-4}{\meter\cubed\per\coulomb}$ & \cite{besse2002,boero2003} \\
-Bismuth & 15{,}000 & $n = \SI{3e23}{\per\meter\cubed}$ & $R_H = \SI{2.1e-5}{\meter\cubed\per\coulomb}$ & \cite{komnik1975,heremans1993} \\
-Bi$_2$Se$_3$ TI & 3{,}000 & $n_s = \SI{2e16}{\per\meter\squared}$ & \SI{312}{\volt\per\ampere\per\tesla} & \cite{saeed2024,koirala2015} \\
+\multicolumn{5}{@{}l}{\textit{Other platforms}} \\
+Si CMOS & 1{,}400 & $n = 1\times10^{22}$\,m$^{-3}$ & $R_H = 6.3\times10^{-4}$ & \cite{besse2002,boero2003} \\
+Bismuth & 15{,}000 & $n = 3\times10^{23}$\,m$^{-3}$ & $R_H = 2.1\times10^{-5}$ & \cite{komnik1975,heremans1993} \\
+Bi$_2$Se$_3$ TI & 3{,}000 & $n_s = 2\times10^{16}$\,m$^{-2}$ & $S_I = 312$ & \cite{saeed2024,koirala2015} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 The material database enables cross-platform comparison under identical bead-channel conditions. Since $\Delta V_H \propto \mu \cdot S_I \cdot \langle B_z \rangle \cdot V_{\text{bias}}$ and $S_I$ is inversely proportional to carrier density, the Hall voltage is proportional to the mobility for a given geometry. Graphene/hBN ($\mu = \SI{40000}{\centi\meter\squared\per\volt\per\second}$) and InSb quantum wells ($\mu = \SI{42000}{\centi\meter\squared\per\volt\per\second}$) produce the largest signals, while Si CMOS ($\mu = \SI{1400}{\centi\meter\squared\per\volt\per\second}$) and AlGaN/GaN ($\mu = \SI{1500}{\centi\meter\squared\per\volt\per\second}$) produce signals roughly 30 times weaker at the same geometry. The practical advantage of AlGaN/GaN is its operation at temperatures exceeding \SI{500}{\kelvin}; graphene/SiC is similarly stable to \SI{770}{\kelvin} \cite{ciuk2019}.
 
@@ -371,35 +370,35 @@ The FEM page displays the $\Delta B_z$ field map, mesh overlay, and a side-by-si
 We validate $\mu$Flow against the three sensor designs characterized in our companion COMSOL FEM-BEM study \cite{govindaraju2025}. Table~\ref{tab:designs} summarizes the design parameters, and Table~\ref{tab:validation} presents the validation results.
 
 \begin{table}[!htbp]
-\caption{Sensor design configurations from Ref.~\cite{govindaraju2025}. All designs use $R_H = \SI{1.25e-3}{\meter\cubed\per\coulomb}$, $\sigma = \SI{1040}{\siemens\per\meter}$, $V_{\text{bias}} = \SI{5}{\volt}$, $B_0 = \SI{50}{\milli\tesla}$, and magnetite beads ($\mu_r = 10$).}
+\caption{Sensor design configurations from Ref.~\cite{govindaraju2025}. All use $R_H = 1.25\times10^{-3}$\,m$^3$/C, $\sigma = 1040$\,S/m, $V_{\text{bias}} = 5$\,V, $B_0 = 50$\,mT, magnetite beads ($\mu_r = 10$).}
 \label{tab:designs}
 \centering
-\small
-\begin{tabular}{lccc}
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
 \toprule
-Parameter & Design I & Design II & Design III \\
+Parameter & Design~I & Design~II & Design~III \\
 \midrule
-Sensor width $w$ (\si{\micro\meter}) & 5 & 10 & 50 \\
-Sensor thickness $t$ (\si{\micro\meter}) & 0.5 & 1 & 1 \\
-Bead diameter $d_b$ (\si{\micro\meter}) & 2 & 6 & 10 \\
-Bead-sensor distance $r$ (\si{\micro\meter}) & 1 & 3 & 5 \\
-Bead-to-sensor area ratio & 0.126 & 0.283 & 0.031 \\
+Sensor width $w$ ($\mu$m) & 5 & 10 & 50 \\
+Sensor thickness $t$ ($\mu$m) & 0.5 & 1 & 1 \\
+Bead diameter $d_b$ ($\mu$m) & 2 & 6 & 10 \\
+Bead-sensor distance $r$ ($\mu$m) & 1 & 3 & 5 \\
+Area ratio $(\pi d_b^2/4)/w^2$ & 0.126 & 0.283 & 0.031 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[!htbp]
-\caption{Validation of $\mu$Flow against COMSOL FEM-BEM results from Ref.~\cite{govindaraju2025}. $\Delta V_H$ values correspond to a bead positioned directly above the sensor center.}
+\caption{Validation of $\mu$Flow against COMSOL FEM-BEM results \cite{govindaraju2025}. Bead positioned directly above sensor center.}
 \label{tab:validation}
 \centering
-\small
-\begin{tabular}{lcccc}
+\footnotesize
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Design & COMSOL $\Delta V_H$ (\si{\milli\volt}) & $\mu$Flow $\Delta V_H$ (\si{\milli\volt}) & Relative error (\%) & Trend \\
+Design & COMSOL (mV) & $\mu$Flow (mV) & Error (\%) & Trend \\
 \midrule
-I ($5 \times 5$~\si{\micro\meter}) & 21.375 & 20.2 & 5.5 & $\mu$Flow lower \\
-II ($10 \times 10$~\si{\micro\meter}) & 42.79 & 42.4 & 0.9 & $\mu$Flow lower \\
-III ($50 \times 50$~\si{\micro\meter}) & 3.056 & 3.03 & 0.9 & $\mu$Flow lower \\
+I ($5\times5$\,$\mu$m) & 21.375 & 20.2 & 5.5 & $\mu$Flow lower \\
+II ($10\times10$\,$\mu$m) & 42.79 & 42.4 & 0.9 & $\mu$Flow lower \\
+III ($50\times50$\,$\mu$m) & 3.056 & 3.03 & 0.9 & $\mu$Flow lower \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -424,13 +423,13 @@ The built-in FEM solver (Section~\ref{sec:fem}) provides an additional, independ
 The point-dipole stray field (Eq.~\eqref{eq:dipole}) converts bead magnetization into a detectable Hall voltage and must produce physically correct field magnitudes. Table~\ref{tab:stray} compares published experimentally measured stray fields from micro-Hall and CMOS array experiments against the expected dipole scaling. Gambini et al.\ measured stray fields from individual Dynabeads at the sensor plane of a 10{,}000-pixel CMOS Hall array with baseline suppression, providing high-confidence single-bead field values \cite{gambini2013}. Manandhar et al.\ measured the stray field from functionalized magnetic nanoparticles bound to an InAs micro-Hall sensor surface \cite{manandhar2009}.
 
 \begin{table}[!htbp]
-\caption{Bead stray field at the sensor plane: published experimental measurements serving as benchmarks for the dipole model. All measurements at room temperature.}
+\caption{Bead stray field at the sensor plane: published experimental measurements serving as benchmarks for the dipole model. All at room temperature.}
 \label{tab:stray}
 \centering
-\small
-\begin{tabular}{lcccc}
+\footnotesize
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Bead & $d_b$ (\si{\micro\meter}) & Distance (\si{\micro\meter}) & $B_{\text{stray}}$ (\si{\micro\tesla}) & Ref. \\
+Bead & $d_b$ ($\mu$m) & Distance ($\mu$m) & $B_{\text{stray}}$ ($\mu$T) & Ref. \\
 \midrule
 Dynabeads M-450 & 4.5 & ${\sim}$3 & 80 & \cite{gambini2013} \\
 Dynabeads M-280 & 2.8 & ${\sim}$3 & 11.2 & \cite{gambini2013} \\
@@ -450,27 +449,27 @@ The measured stray fields scale with $d_b^3$ as predicted by Eq.~\eqref{eq:momen
 Table~\ref{tab:sensitivity_validation} compares the current-related sensitivity $S_I$ or Hall coefficient $R_H$ computed from $\mu$Flow's material database against independently reported experimental values for each platform family. The agreement validates that the carrier density and mobility values in the database correctly reproduce the Hall response of each sensor technology.
 
 \begin{table}[!htbp]
-\caption{Current-related sensitivity or Hall coefficient: $\mu$Flow database values vs.\ published experimental reports. For 2D materials, $S_I = 1/(n_s e)$. For 3D materials, $R_H = 1/(ne)$.}
+\caption{Sensitivity validation: $\mu$Flow database vs.\ published values. $S_I$ in V/AT for 2D; $R_H$ in m$^3$/C for 3D materials.}
 \label{tab:sensitivity_validation}
 \centering
-\small
-\begin{tabular}{lccl}
+\footnotesize
+\begin{tabular}{@{}lccc@{}}
 \toprule
 Material & $\mu$Flow & Published & Ref. \\
 \midrule
-\multicolumn{4}{l}{\textit{$S_I$ (\si{\volt\per\ampere\per\tesla}) for 2D materials}} \\
+\multicolumn{4}{@{}l}{\textit{$S_I$ (V/AT) --- 2D materials}} \\
 Graphene/hBN & 5700 & 5700 & \cite{dauber2015} \\
 CVD graphene & 1250 & 1200--2093 & \cite{xu2013,huang2014} \\
 Graphene/SiC & 83 & 87 & \cite{ciuk2019,panchal2012} \\
-GaAs/AlGaAs 2DEG & 1250 & 1000--1600 & \cite{haned2003,boero2003} \\
-InAs/AlSb 2DEG & 625 & 616 & \cite{mihajlovic2005} \\
+GaAs/AlGaAs & 1250 & 1000--1600 & \cite{haned2003,boero2003} \\
+InAs/AlSb & 625 & 616 & \cite{mihajlovic2005} \\
 InSb QW & 1250 & 1100--1400 & \cite{gilbertson2011,kunets2009} \\
-Bi$_2$Se$_3$ TI & 312 & 300--350 & \cite{saeed2024,koirala2015} \\
+Bi$_2$Se$_3$ & 312 & 300--350 & \cite{saeed2024,koirala2015} \\
 \midrule
-\multicolumn{4}{l}{\textit{$R_H$ (\si{\meter\cubed\per\coulomb}) for 3D materials}} \\
-Si CMOS & $6.3 \times 10^{-4}$ & $5 \times 10^{-4}$--$8 \times 10^{-4}$ & \cite{besse2002,boero2003} \\
-InSb MBE & $3.1 \times 10^{-4}$ & $2.5 \times 10^{-4}$--$4 \times 10^{-4}$ & \cite{togawa2005,sandhu2004} \\
-InAs film & $4.2 \times 10^{-5}$ & $3.5 \times 10^{-5}$--$5 \times 10^{-5}$ & \cite{boero2003,heremans1993} \\
+\multicolumn{4}{@{}l}{\textit{$R_H$ (m$^3$/C) --- 3D materials}} \\
+Si CMOS & $6.3{\times}10^{-4}$ & $(5$--$8){\times}10^{-4}$ & \cite{besse2002,boero2003} \\
+InSb MBE & $3.1{\times}10^{-4}$ & $(2.5$--$4){\times}10^{-4}$ & \cite{togawa2005,sandhu2004} \\
+InAs film & $4.2{\times}10^{-5}$ & $(3.5$--$5){\times}10^{-5}$ & \cite{boero2003,heremans1993} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -644,7 +643,7 @@ We have presented $\mu$Flow, a browser-based simulator for microfluidic Hall-eff
 
 The parametric analysis yielded three actionable design guidelines: (1)~the bead-to-sensor area ratio should lie between 0.1 and 0.5 for maximum $\Delta V_H$, corresponding to sensor widths of \SIrange{5}{25}{\micro\meter} for standard Dynabeads; (2)~the optimal flow velocity window of \SIrange{0.5}{5}{\milli\meter\per\second} balances detection reliability against throughput for channels below \SI{100}{\micro\meter}; and (3)~graphene/hBN and InSb quantum wells produce intrinsic signals $30\times$ stronger than Si CMOS or AlGaN/GaN, though the latter platforms offer mature CMOS integration and high-temperature operation, respectively. These guidelines, spanning the sensor geometry, material selection, and flow velocity dimensions, are generated in seconds by the parametric sweep engine, compared to the days of FEM computation required for equivalent parameter explorations.
 
-$\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app} and released under the MIT license at \url{https://github.com/hg293/microfluidic-hall-sensor}.
+$\mu$Flow is deployed at \url{https://microfluidic-hall-sensor.vercel.app}. All rights reserved.
 
 % ========================================================================
 % DECLARATIONS
@@ -660,7 +659,7 @@ The authors declare that they have no known competing financial interests or per
 
 \section*{Data availability}
 
-The source code and all simulation data are publicly available at \url{https://github.com/hg293/microfluidic-hall-sensor} under the MIT license.
+The simulator is publicly accessible at \url{https://microfluidic-hall-sensor.vercel.app}. Simulation data generated for this study are available from the corresponding author upon reasonable request.
 
 \section*{Acknowledgments}
 
