@@ -1,0 +1,32 @@
+{
+  "name": "microfluidic-hall-sensor",
+  "version": "1.0.0",
+  "description": "uFlow: interactive browser-based 3D simulator for microfluidic Hall-effect magnetic bead detection.",
+  "main": "build.mjs",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hg293/microfluidic-hall-sensor.git"
+  },
+  "keywords": [
+    "microfluidic",
+    "hall-effect",
+    "biosensor",
+    "magnetic-bead",
+    "simulation",
+    "three.js",
+    "react"
+  ],
+  "author": "Harshitha Govindaraju <harshitha.govindaraju@rutgers.edu>",
+  "contributors": [
+    "Umer Hassan <umer.hassan@rutgers.edu>"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/hg293/microfluidic-hall-sensor/issues"
+  },
+  "homepage": "https://microfluidic-hall-sensor.vercel.app"
+}
