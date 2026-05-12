@@ -76,10 +76,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .slider-name{font-size:var(--fs-md);color:var(--text);display:flex;align-items:center;gap:6px;font-weight:600}
 .slider-val{font-family:'JetBrains Mono',monospace;font-size:var(--fs-md);color:var(--primary);font-weight:700;text-shadow:0 0 12px rgba(34,211,238,0.35)}
-.slider-hint{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(34,211,238,0.2);font-size:11px;font-weight:700;color:var(--primary);cursor:help;flex-shrink:0;transition:all 0.15s}
-.slider-row:hover .slider-hint{background:var(--primary);color:var(--bg)}
-.slider-desc{display:none;font-size:var(--fs-sm);color:var(--text);line-height:1.5;padding:8px 10px;background:rgba(34,211,238,0.08);border:1px solid var(--primary-dim);border-radius:6px;margin-bottom:5px;font-weight:500}
-.slider-row:hover .slider-desc{display:block}
+.slider-hint{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:rgba(34,211,238,0.15);font-size:11px;font-weight:700;color:var(--primary);cursor:pointer;flex-shrink:0;border:1px solid var(--card-border);transition:transform 0.18s ease-out,background 0.15s,border-color 0.15s;padding:0;line-height:1;font-family:'DM Sans',sans-serif}
+.slider-hint:hover{background:rgba(34,211,238,0.3);border-color:var(--primary-dim)}
+.slider-hint:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.slider-hint.open{background:var(--primary);color:#06121e;border-color:var(--primary);transform:rotate(90deg)}
+.slider-desc{font-size:var(--fs-sm);color:var(--text);line-height:1.5;padding:8px 10px;background:rgba(34,211,238,0.08);border:1px solid var(--primary-dim);border-radius:6px;margin:4px 0 6px;font-weight:500;animation:slider-desc-in 0.18s ease-out}
+@keyframes slider-desc-in{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
 input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--subtle);outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer;border:3px solid var(--bg);box-shadow:0 0 12px var(--primary)}
 input[type=range]:disabled{opacity:0.4}
@@ -491,12 +493,21 @@ const SENSOR_PRESETS = [
 function Slider({label, value, min, max, step, unit, onChange, disabled, desc}) {
   const s = step || 1;
   const fmt = s < 0.01 ? value.toFixed(3) : s < 0.1 ? value.toFixed(2) : s < 1 ? value.toFixed(1) : Math.round(value);
+  const [open, setOpen] = useState(false);
   return h('div',{className:'slider-row'},
     h('div',{className:'slider-header'},
-      h('span',{className:'slider-name'},label,desc&&h('span',{className:'slider-hint'},'?')),
+      h('span',{className:'slider-name'},label,
+        desc && h('button',{
+          type:'button',
+          className:'slider-hint'+(open?' open':''),
+          'aria-expanded':open,
+          'aria-label':open?'Hide explanation':'Show explanation',
+          onClick:()=>setOpen(o=>!o)
+        },'▸')
+      ),
       h('span',{className:'slider-val'},fmt+(unit||''))
     ),
-    desc&&h('div',{className:'slider-desc'},desc),
+    desc && open && h('div',{className:'slider-desc'},desc),
     h('input',{type:'range',min,max,step:s,value,disabled:!!disabled,
       onChange:e=>onChange(+e.target.value)})
   );
@@ -579,19 +590,24 @@ class FluidScene {
 
   buildChannel(sceneLen, sceneH, sceneW) {
     this.channelGroup.clear(); this.chLen = sceneLen;
-    const pdmsW = sceneW * 3;
-    // PDMS silicone block (outer, holds the channel)
-    const pdmsGeo = new THREE.BoxGeometry(sceneLen * 1.1, sceneH + 0.6, pdmsW);
-    const pdmsMat = new THREE.MeshPhysicalMaterial({color:0xbbe5ff, transparent:true, opacity:0.14, roughness:0.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
+    // PDMS silicone block: a thin wrapper that hugs the channel.
+    // Previously the PDMS was 1.1x the channel length and 3x the channel
+    // width, which made the white outline (PDMS) look completely disconnected
+    // from the cyan fill (channel) inside. Now PDMS is channel + 0.4 in every
+    // dimension, so the outline and the fluid path read as one coherent box.
+    const wrap = 0.4;
+    const pdmsGeo = new THREE.BoxGeometry(sceneLen + wrap, sceneH + wrap, sceneW + wrap);
+    const pdmsMat = new THREE.MeshPhysicalMaterial({color:0xbbe5ff, transparent:true, opacity:0.12, roughness:0.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
     const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
-    pdms.position.y = sceneH/2 + 0.3; this.channelGroup.add(pdms);
-    // White boundary outline traces the PDMS block (what the user sees as "the actual stuff")
+    pdms.position.y = sceneH/2; this.channelGroup.add(pdms);
+    // White boundary outline traces the PDMS block.
     const pdmsEdges = new THREE.EdgesGeometry(pdmsGeo);
     const pdmsLine = new THREE.LineSegments(pdmsEdges, new THREE.LineBasicMaterial({color:0xf8fafc, transparent:true, opacity:0.95, linewidth:2}));
-    pdmsLine.position.y = sceneH/2 + 0.3; this.channelGroup.add(pdmsLine);
-    // Inner channel (void where the fluid flows)
+    pdmsLine.position.y = sceneH/2; this.channelGroup.add(pdmsLine);
+    // Inner channel (the void where the fluid flows). Slightly higher opacity
+    // so it's clearly visible inside the PDMS wrapper.
     const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
-    const chMat = new THREE.MeshPhysicalMaterial({color:0x67e8f9, transparent:true, opacity:0.18, side:THREE.DoubleSide, depthWrite:false});
+    const chMat = new THREE.MeshPhysicalMaterial({color:0x22d3ee, transparent:true, opacity:0.28, side:THREE.DoubleSide, depthWrite:false});
     this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(sceneLen, pdmsW), new THREE.MeshStandardMaterial({color:0x3b5380, transparent:true, opacity:0.4, side:THREE.DoubleSide}));
     floor.rotation.x = -Math.PI/2; floor.position.y = 0.01; this.channelGroup.add(floor);
