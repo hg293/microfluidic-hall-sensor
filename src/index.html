@@ -578,7 +578,7 @@ class FluidScene {
 
   buildChannel(sceneLen, sceneH, sceneW) {
     this.channelGroup.clear(); this.chLen = sceneLen;
-    const pdmsW = Math.max(sceneW * 3, 8);
+    const pdmsW = sceneW * 3;
     const pdmsGeo = new THREE.BoxGeometry(sceneLen * 1.1, sceneH + 0.6, pdmsW);
     const pdmsMat = new THREE.MeshPhysicalMaterial({color:0xbbe5ff, transparent:true, opacity:0.06, roughness:0.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
     const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
@@ -613,13 +613,13 @@ class FluidScene {
 
   buildCHMA() {
     this.chmaGroup.clear();
-    const nMag = 16, radius = 7, magW = 2.5, magH = 2, magD = 2.5;
+    const nMag = 16, radius = 8.5, magW = 2.5, magH = 2, magD = 2.5;
     // VERTICAL ring in Y-Z plane. Bore axis along X (flow direction).
     // Halbach k=1 dipole: transverse field inside bore points DOWN (-Y).
     // Sensor flat in X-Z plane at bore center. B₀ ⊥ sensor.
     // Matches COMSOL cross-section: small square magnets around vertical circle,
     // field arrows inside bore pointing straight down.
-    const magSize = 1.2; // small cubes like COMSOL 16-segment image
+    const magSize = 2.6; // larger so magnets visually dominate the scene
     for (let i = 0; i < nMag; i++) {
       const angle = (i / nMag) * Math.PI * 2;
       const magAngle = 2 * angle; // Halbach k=1
@@ -657,7 +657,7 @@ class FluidScene {
     // Non-metallic + high emissive so it self-illuminates as pure white
     // instead of acting like a mirror reflecting the dark scene.
     const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(radius, 0.32, 20, 128),
+      new THREE.TorusGeometry(radius, 0.45, 20, 128),
       new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xffffff, emissiveIntensity:0.95, metalness:0.0, roughness:0.45})
     );
     ring.rotation.y = Math.PI / 2;
@@ -2575,7 +2575,7 @@ function App() {
 
   const visLen = Math.max(sensor.size * 25, 500e-6);
   const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
-  const SCENE_LEN = 30, SCENE_H = 4, SCENE_W = 3;
+  const SCENE_LEN = 18, SCENE_H = 2.5, SCENE_W = 1.5;
   const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H / chH_m, scaleZ = SCENE_W / chW_m;
   const beadSceneScale = SCENE_W / (sensor.size || 10e-6); // scale bead relative to sensor width
   const rScene = Math.max(0.12, r_bead * beadSceneScale * 0.9);
