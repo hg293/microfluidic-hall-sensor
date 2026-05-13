@@ -601,6 +601,14 @@ class FluidScene {
     const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
     const chMat = new THREE.MeshPhysicalMaterial({color:0x22d3ee, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false});
     this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
+    // Visible edge outline so the user can see exactly where the channel
+    // walls / floor / ceiling sit. Without this, the translucent fill makes
+    // the box look like it ends mid-air and the dashed H marker looks
+    // detached from the channel top.
+    const chEdges = new THREE.EdgesGeometry(chGeo);
+    const chLines = new THREE.LineSegments(chEdges, new THREE.LineBasicMaterial({color:0x67e8f9, transparent:true, opacity:0.6}));
+    chLines.position.y = sceneH/2;
+    this.channelGroup.add(chLines);
     // Channel-ceiling label so the user can see where H sits.
     if (chH_um) {
       const hc = document.createElement('canvas'); hc.width = 256; hc.height = 56;
@@ -610,14 +618,17 @@ class FluidScene {
       hctx.fillText('H = ' + chH_um + ' µm', 6, 38);
       const hsp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(hc), transparent:true, opacity:0.95}));
       hsp.scale.set(4.8, 1.05, 1);
-      hsp.position.set(-sceneLen/2 + 2.5, sceneH + 0.55, sceneW/2 + 0.1);
+      // Place the label just above the back-top edge so it sits clearly
+      // above the (now visible) ceiling edge instead of floating ambiguously.
+      hsp.position.set(-sceneLen/2 + 2.5, sceneH + 0.35, -sceneW/2 - 0.1);
       this.channelGroup.add(hsp);
-      // Dashed marker at the ceiling so the eye anchors to that line.
+      // Dashed marker EXACTLY on the back-top edge (z = -sceneW/2). With the
+      // edge outline now visible, the marker coincides with the channel top.
       const ceilGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-sceneLen/2, sceneH, sceneW/2),
-        new THREE.Vector3( sceneLen/2, sceneH, sceneW/2),
+        new THREE.Vector3(-sceneLen/2, sceneH, -sceneW/2),
+        new THREE.Vector3( sceneLen/2, sceneH, -sceneW/2),
       ]);
-      const ceilLine = new THREE.Line(ceilGeo, new THREE.LineDashedMaterial({color:0xf8fafc, dashSize:0.25, gapSize:0.18, transparent:true, opacity:0.7}));
+      const ceilLine = new THREE.Line(ceilGeo, new THREE.LineDashedMaterial({color:0xf8fafc, dashSize:0.25, gapSize:0.18, transparent:true, opacity:0.85}));
       ceilLine.computeLineDistances();
       this.channelGroup.add(ceilLine);
     }
