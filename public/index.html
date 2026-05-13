@@ -604,10 +604,6 @@ class FluidScene {
     const pdmsMat = new THREE.MeshPhysicalMaterial({color:0xbbe5ff, transparent:true, opacity:0.12, roughness:0.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
     const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
     pdms.position.y = sceneH/2; this.channelGroup.add(pdms);
-    // White boundary outline traces the PDMS block.
-    const pdmsEdges = new THREE.EdgesGeometry(pdmsGeo);
-    const pdmsLine = new THREE.LineSegments(pdmsEdges, new THREE.LineBasicMaterial({color:0xf8fafc, transparent:true, opacity:0.95, linewidth:2}));
-    pdmsLine.position.y = sceneH/2; this.channelGroup.add(pdmsLine);
     // Inner channel (the void where the fluid flows). Slightly higher opacity
     // so it's clearly visible inside the PDMS wrapper.
     const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
