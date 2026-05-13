@@ -1488,8 +1488,30 @@ function TheoryPage() {
 
     // 4. Poiseuille Flow
     h('div', {className:'theory-section'},
+      h('div', {className:'theory-h2 flow'}, 'Bead Position: h vs Channel Height H'),
+      h('div', {className:'theory-p'},
+        'Two parameters describe vertical geometry but they serve very different roles in the model. ',
+        h('b', null, 'h'), ' is the bead-center distance above the sensor surface. It is the only height that enters the Hall signal — the dipole stray field decays as 1/r³, so ',
+        h('b', null, 'ΔV_H ∝ 1/h³'), '. ',
+        h('b', null, 'H'), ' is the total channel height. It does ',
+        h('b', null, 'not'), ' enter the signal formula at all. Its job is to (a) bound where the bead can sit and (b) shape the Poiseuille velocity profile through the y/H ratio.'
+      ),
+      EQ(
+        'bead_radius ≤ h ≤ H − bead_radius',
+        h(React.Fragment, null,
+          'Geometric constraint. The bead occupies y ∈ [h − r_b, h + r_b] in the channel; both ends must fit inside [0, H]. The h slider in the sidebar is auto-clamped to this range whenever H or the bead diameter changes.'
+        ),
+        null
+      ),
+      h('div', {className:'theory-h2 flow'}, 'Fixed h vs Random h modes'),
+      h('div', {className:'theory-p'},
+        h('b', null, 'Fixed mode.'), ' Every bead in the batch is placed at the same h. Useful for controlled comparisons where only sensor, bead, or material parameters vary — the height-dependent term is held constant so the resulting ΔV_H variance is dominated by numerical quadrature (typical CV ≈ 1–2%).'
+      ),
+      h('div', {className:'theory-p'},
+        h('b', null, 'Random mode.'), ' Each bead in the batch is sampled independently from a uniform distribution on [min h, max h]. Both bounds are themselves clamped to the geometric constraint above, so the effective sampling range is [max(r_b, min h), min(H − r_b, max h)]. This produces a realistic spread of per-bead signals: beads near the floor produce strong pulses (1/h³), beads near the ceiling produce weak ones, and the resulting ΔV_H distribution has a long tail with CV typically 30–50% depending on the (min h, max h) span. The detection-rate metric reflects what fraction of those samples crossed the user threshold — i.e., the throughput a real flow assay would see for that h-spread.'
+      ),
       h('div', {className:'theory-h2 flow'}, 'Poiseuille Flow Profile'),
-      h('div', {className:'theory-p'}, 'Bead transport through the microfluidic channel follows a parabolic Poiseuille velocity profile. Beads near the channel center travel faster than those near the walls.'),
+      h('div', {className:'theory-p'}, 'Once the bead is at vertical position y in the channel, its streamwise velocity follows the standard parabolic profile. Beads near the channel center travel fastest; beads near either wall slow to zero. In Random mode this means tall-channel samples not only produce weaker signals but also longer transit times (extra integration window).'),
       EQ(
         'v(y) = 1.5 \u00b7 v\u0304 \u00b7 [1 \u2212 ((2y/H) \u2212 1)\u00b2]',
         h(React.Fragment, null,

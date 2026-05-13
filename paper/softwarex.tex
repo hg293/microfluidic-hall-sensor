@@ -133,6 +133,8 @@ $m = \tfrac{4}{3}\pi r_b^3 \phi \chi_{\text{eff}} B_0 / \mu_0$ with $\chi_{\text
 
 \item \textbf{Volume-averaged Hall voltage} $\Delta V_H = G R_H \sigma \langle B_z\rangle V_{\text{bias}}$ with $\langle B_z\rangle$ computed by midpoint quadrature on an $n_{xy} \times n_{xy} \times n_z$ grid spanning the sensor volume, and a user-adjustable geometric correction factor $G$ for non-square Hall crosses \cite{popovic2004}.
 
+\item \textbf{Bead vertical position.} The simulator distinguishes two parameters: $h$, the bead-center distance above the sensor surface, and $H$, the channel height. $h$ is the only height that enters the dipole stray-field formula and therefore the only height that directly drives $\Delta V_H \propto 1/h^3$. $H$ does not appear in the signal formula; it bounds where $h$ can sit (geometric constraint $r_b \le h \le H - r_b$) and shapes the velocity profile via the $y/H$ dependence below. The h slider in the simulator UI is auto-clamped to this range whenever the user changes $H$ or the bead diameter, so the displayed bead is always physically inside the channel.
+
 \item \textbf{Poiseuille transport} $v(y) = \tfrac{3}{2}\bar{v}[1 - (2y/H - 1)^2]$ with adaptive sub-stepping and optional magnetophoretic drift.
 
 \item \textbf{Noise and detection metrics.} Johnson--Nyquist noise $V_{\text{th}} = \sqrt{4 k_B T R_\square \Delta f}$ and Hooge $1/f$ noise $V_{1/f} = V_{\text{bias}}\sqrt{(\alpha_H/N)\ln(1+\Delta f/f_{\text{op}})}$. The tool reports $\Delta V_H$, $V_n = \sqrt{V_{\text{th}}^2 + V_{1/f}^2}$, $\text{SNR} = |\Delta V_H|/V_n$, and the minimum detectable field $B_\text{min}$.
@@ -141,7 +143,7 @@ $m = \tfrac{4}{3}\pi r_b^3 \phi \chi_{\text{eff}} B_0 / \mu_0$ with $\chi_{\text
 
 \item \textbf{Parametric sweep engine.} 1D and 2D sweeps across geometry, material, bead, flow velocity, and applied field, with CSV export of the result tables.
 
-\item \textbf{Batch mode.} $N \in [1,50]$ beads are injected at random lateral positions and heights, transported through Poiseuille flow, and characterized by per-bead peak $\Delta V_H$, detection status, and aggregate detection rate, mean, standard deviation, and coefficient of variation.
+\item \textbf{Batch mode.} $N \in [1,50]$ beads are injected and transported through Poiseuille flow. Two height-sampling modes are supported. In \textit{Fixed-$h$} mode all beads share the same $h$, which isolates the influence of sensor, bead, or material parameters from the height term (residual coefficient of variation $\approx 1$--$2\%$ from numerical quadrature). In \textit{Random-$h$} mode each bead's $h$ is drawn independently from a uniform distribution on $[\,\max(r_b,h_{\min}),\,\min(H-r_b,h_{\max})\,]$, where $h_{\min}$ and $h_{\max}$ are user-set bounds and the outer $\min/\max$ clamps enforce the geometric constraint of Item~4. The resulting per-bead signals span the $1/h^3$ decay over the sampled range and reproduce the height-dependent spread observed experimentally by Aledealat et al.\ \cite{aledealat2009}. Each bead is characterized by its peak $\Delta V_H$, detection status against the user threshold, and the aggregate batch returns detection rate, mean, standard deviation, and coefficient of variation.
 
 \item \textbf{2D axisymmetric FEM solver.} Solves $(1/r)\partial_r(r\mu_r\partial_r\varphi) + \partial_z(\mu_r \partial_z\varphi) = 0$ on a structured grid using linear triangular elements and a preconditioned conjugate-gradient solver, providing an independent volumetric check on the analytical dipole model.
 \end{enumerate}
