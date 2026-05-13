@@ -2665,19 +2665,33 @@ function App() {
 
   const visLen = Math.max(sensor.size * 25, 500e-6);
   const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
-  // Scene scaling: 1 scene unit = 20 µm vertically (SCENE_H_PER_UM = 0.05).
-  // Anchored so that the historical default chH = 50 µm renders at the
-  // same visual height (SCENE_H = 2.5) as the old code. The key property
-  // of this choice is that a bead at fixed h always appears at the same
-  // scene-y regardless of chH — increasing the channel height makes the
-  // channel ceiling rise but does NOT move the bead. That fixes the
-  // earlier counterintuitive behavior where raising chH made the bead
-  // visually slide toward the sensor floor (because SCENE_H was fixed
-  // and scaleY was rescaling everything).
-  const SCENE_H_PER_UM = 0.05;
-  const SCENE_LEN = 18, SCENE_W = 1.5;
-  const SCENE_H = chH * SCENE_H_PER_UM;
-  const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H_PER_UM * 1e6, scaleZ = SCENE_W / chW_m;
+  // Scene scaling: a single absolute factor SCENE_PER_UM = 0.05 controls
+  // BOTH the vertical (channel height) and lateral (channel width)
+  // mapping. Anchored so that the historical default chH = 50 µm renders
+  // at the same visual height (SCENE_H = 2.5) as the original code.
+  //   SCENE_H = chH * 0.05            — vertical channel height
+  //   SCENE_W = sensor.size * 0.05    — lateral channel width
+  //                                     (chW_m == sensor.size in the model)
+  //   SCENE_LEN = 18 (constant)       — there is no "channel length"
+  //                                     parameter in the simulation, so
+  //                                     the X extent stays a fixed
+  //                                     visualization window, like the
+  //                                     field of view of a microscope.
+  // Both scaleY and scaleZ are now constants equal to SCENE_PER_UM * 1e6
+  // (= 50000 scene-units per metre), so a bead at given (y, z) in real
+  // coordinates always maps to the same scene point regardless of channel
+  // size — the channel grows/shrinks around it.
+  const SCENE_PER_UM = 0.05;
+  const SCENE_LEN = 18;
+  const SCENE_H = chH * SCENE_PER_UM;
+  const SCENE_W = Math.max(0.6, sensor.size * 1e6 * SCENE_PER_UM);
+  // Floor sensor.size mapping to 0.6 scene units so very small sensors
+  // remain visible; the simulation scaleZ stays linear so the bead's
+  // physical z-position is still mapped honestly to scene-z within the
+  // (now possibly clipped) channel.
+  const scaleX = SCENE_LEN / visLen;
+  const scaleY = SCENE_PER_UM * 1e6;
+  const scaleZ = SCENE_W / chW_m;
   const beadSceneScale = SCENE_W / (sensor.size || 10e-6); // scale bead relative to sensor width
   const rScene = Math.max(0.12, r_bead * beadSceneScale * 0.9);
   const Q_uLmin = vAvg * chW_m * chH_m * 60 * 1e6;
