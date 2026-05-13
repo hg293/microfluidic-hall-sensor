@@ -48,7 +48,7 @@
 \address[rutgers]{Department of Electrical and Computer Engineering, Rutgers, The State University of New Jersey, 94 Brett Road, Piscataway, NJ 08854, USA}
 
 \begin{abstract}
-$\mu$Flow is a browser-based 3D interactive simulator for microfluidic Hall-effect detection of superparamagnetic beads. The tool couples four analytical physics modules (Clausius--Mossotti bead magnetization with volume-fraction correction, point-dipole stray field, volume-averaged Hall voltage with geometric correction, and Poiseuille flow with adaptive sub-stepping) and a thermal and $1/f$ noise framework across a database of 12 sensor platforms spanning graphene, III--V semiconductors, Si CMOS, bismuth, and topological insulators. The analytical model reproduces COMSOL FEM-BEM benchmarks within \SI{6}{\percent} for three sensor designs from \SI{5}{} to \SI{50}{\micro\meter}. A built-in 2D axisymmetric magnetostatic FEM solver provides an independent volumetric-field check on the dipole model. A parametric sweep engine evaluates thousands of configurations in seconds, and a batch mode collects per-bead detection statistics under Poiseuille flow. $\mu$Flow is a single HTML file requiring no installation, build step, or commercial license.
+$\mu$Flow is a browser-based 3D interactive simulator for microfluidic Hall-effect detection of superparamagnetic beads. The tool couples four analytical physics modules (Clausius--Mossotti bead magnetization with volume-fraction correction, point-dipole stray field, volume-averaged Hall voltage with geometric correction, and Poiseuille flow with adaptive sub-stepping) together with a thermal $1/f$ noise framework across a database of 12 sensor platforms spanning graphene, III--V semiconductors, Si CMOS, bismuth, and topological insulators. The analytical model reproduces COMSOL FEM-BEM benchmarks within \SI{6}{\percent} for three sensor designs from \SI{5}{} to \SI{50}{\micro\meter}. A built-in 2D axisymmetric magnetostatic FEM solver provides an independent volumetric-field check on the dipole model. A parametric sweep engine evaluates thousands of configurations in seconds, and a batch mode collects per-bead detection statistics under Poiseuille flow. $\mu$Flow is a single HTML file requiring no installation, build step, or commercial license.
 \end{abstract}
 
 \begin{keyword}
@@ -266,13 +266,31 @@ Built-in FEM (fine mesh) & \SI{2}{\second} & N/A \\
 \section{Conclusions}
 % =====================================================================
 
-$\mu$Flow couples four analytical physics modules and a thermal/$1/f$ noise framework into a browser-based 3D simulator for microfluidic Hall-effect magnetic bead detection. The analytical model reproduces COMSOL FEM-BEM benchmarks within \SI{6}{\percent} across three sensor designs and is qualitatively consistent with three independent published detection experiments. A built-in 2D axisymmetric magnetostatic FEM solver provides an in-app validator that quantifies where the dipole approximation breaks down. The tool transforms what was a multi-day FEM design loop into real-time interactive exploration of sensor geometry, material selection, flow velocity, and bead properties, and is deployed at \url{https://microfluidic-hall-sensor.vercel.app}.
+This article presented $\mu$Flow, a browser-based 3D simulator for microfluidic Hall-effect magnetic bead detection that couples five analytical physics modules (Clausius--Mossotti bead magnetization with volume-fraction correction, point-dipole stray field, volume-averaged Hall voltage with geometric correction, Poiseuille transport, and a thermal $1/f$ noise framework). The analytical model reproduces COMSOL FEM-BEM benchmarks within \SI{6}{\percent} across three sensor designs and is qualitatively consistent with three independent published detection experiments. A built-in 2D axisymmetric magnetostatic FEM solver provides an in-app validator that quantifies where the dipole approximation breaks down. The tool transforms what was a multi-day FEM design loop into real-time interactive exploration of sensor geometry, material selection, flow velocity, and bead properties, and is deployed at \url{https://microfluidic-hall-sensor.vercel.app}.
+
+% =====================================================================
+\section*{CRediT authorship contribution statement}
+% =====================================================================
+
+\textbf{Harshitha Govindaraju:} Conceptualization, Methodology, Software, Validation, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft, Writing -- review \& editing. \textbf{Umer Hassan:} Conceptualization, Methodology, Supervision, Resources, Funding acquisition, Project administration, Writing -- review \& editing.
+
+% =====================================================================
+\section*{Declaration of competing interest}
+% =====================================================================
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+% =====================================================================
+\section*{Data availability}
+% =====================================================================
+
+The $\mu$Flow source code, build script, license, and example assets are openly available on GitHub at \url{https://github.com/hg293/microfluidic-hall-sensor}, and the running application is publicly accessible at \url{https://microfluidic-hall-sensor.vercel.app}. No experimental datasets were generated for this study. Simulation outputs generated during the parametric sweeps reported in Section~3 are reproducible from the deployed application and are available from the corresponding author upon reasonable request and according to the institutional policies.
 
 % =====================================================================
 \section*{Acknowledgements}
 % =====================================================================
 
-This work was supported by the Department of Electrical and Computer Engineering at Rutgers University and by the National Science Foundation under Award Nos.\ 2053149 and 2329761.
+This work was supported by the Department of Electrical and Computer Engineering at Rutgers University. The authors also acknowledge funding support from the National Science Foundation under Award No.\ 2329761.
 
 % =====================================================================
 \section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
