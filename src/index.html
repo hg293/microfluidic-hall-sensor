@@ -2906,7 +2906,8 @@ function App() {
     // ── Header ──
     h('div', {className:'header'},
       h('div', {className:'header-brand'},
-        h('h1', null, h('span', {className:'brand'}, '\u00B5Flow'), ' 3D Microfluidic Hall Sensor'),
+        h('h1', null, h('span', {className:'brand'}, '\u00B5Flow')),
+        h('span', {className:'sub'}, '3D Microfluidic Hall Sensor Simulator'),
       ),
       h('div', {className:'nav-tabs'},
         h('button', {className:'nav-tab'+(page==='simulator'?' active':''), onClick:()=>setPage('simulator')}, '\u25b6 Simulator'),
