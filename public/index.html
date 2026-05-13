@@ -594,22 +594,14 @@ class FluidScene {
 
   buildChannel(sceneLen, sceneH, sceneW) {
     this.channelGroup.clear(); this.chLen = sceneLen;
-    // PDMS silicone block: a thin wrapper that hugs the channel.
-    // Previously the PDMS was 1.1x the channel length and 3x the channel
-    // width, which made the white outline (PDMS) look completely disconnected
-    // from the cyan fill (channel) inside. Now PDMS is channel + 0.4 in every
-    // dimension, so the outline and the fluid path read as one coherent box.
-    const wrap = 0.4;
-    const pdmsGeo = new THREE.BoxGeometry(sceneLen + wrap, sceneH + wrap, sceneW + wrap);
-    const pdmsMat = new THREE.MeshPhysicalMaterial({color:0xbbe5ff, transparent:true, opacity:0.12, roughness:0.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
-    const pdms = new THREE.Mesh(pdmsGeo, pdmsMat);
-    pdms.position.y = sceneH/2; this.channelGroup.add(pdms);
-    // Inner channel (the void where the fluid flows). Slightly higher opacity
-    // so it's clearly visible inside the PDMS wrapper.
+    // Single channel box: the fluid path. Previously we rendered both a
+    // PDMS silicone wrapper AND an inner channel, which read as two
+    // nested translucent boxes instead of one device. Removed the PDMS
+    // mesh so the channel is the only rectangular volume in the scene.
     const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
-    const chMat = new THREE.MeshPhysicalMaterial({color:0x22d3ee, transparent:true, opacity:0.28, side:THREE.DoubleSide, depthWrite:false});
+    const chMat = new THREE.MeshPhysicalMaterial({color:0x22d3ee, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false});
     this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(sceneLen, sceneW + wrap), new THREE.MeshStandardMaterial({color:0x3b5380, transparent:true, opacity:0.4, side:THREE.DoubleSide}));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(sceneLen, sceneW * 2), new THREE.MeshStandardMaterial({color:0x3b5380, transparent:true, opacity:0.4, side:THREE.DoubleSide}));
     floor.rotation.x = -Math.PI/2; floor.position.y = 0.01; this.channelGroup.add(floor);
     const arrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(-sceneLen/2 - 2, sceneH/2, 0), 3.4, 0x67e8f9, 0.85, 0.42);
     arrow.children.forEach(c => { if(c.material){ c.material.transparent=true; c.material.opacity=1; }});
