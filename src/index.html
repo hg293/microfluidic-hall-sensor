@@ -1508,7 +1508,19 @@ function TheoryPage() {
         h('b', null, 'Fixed mode.'), ' Every bead in the batch is placed at the same h. Useful for controlled comparisons where only sensor, bead, or material parameters vary — the height-dependent term is held constant so the resulting ΔV_H variance is dominated by numerical quadrature (typical CV ≈ 1–2%).'
       ),
       h('div', {className:'theory-p'},
-        h('b', null, 'Random mode.'), ' Each bead in the batch is sampled independently from a uniform distribution on [min h, max h]. Both bounds are themselves clamped to the geometric constraint above, so the effective sampling range is [max(r_b, min h), min(H − r_b, max h)]. This produces a realistic spread of per-bead signals: beads near the floor produce strong pulses (1/h³), beads near the ceiling produce weak ones, and the resulting ΔV_H distribution has a long tail with CV typically 30–50% depending on the (min h, max h) span. The detection-rate metric reflects what fraction of those samples crossed the user threshold — i.e., the throughput a real flow assay would see for that h-spread.'
+        h('b', null, 'Random mode.'), ' Each bead in the batch is sampled independently from a ', h('b',null,'uniform'), ' distribution on [min h, max h], with both bounds clamped to the geometric constraint above. This produces a wide 1/h³ signal spread (CV typically 30–50% depending on the bound span) and a detection-rate metric reflecting what fraction crossed the user threshold.'
+      ),
+      h('div', {className:'theory-p'},
+        h('b', null, 'Uniform is a deliberate simplification. '),
+        'The true bead height distribution in a flowing microchannel is shaped by several physical mechanisms that the simulator does not model microscopically:',
+        h('ul', {style:{margin:'8px 0 8px 18px'}},
+          h('li', null, h('b',null,'Sedimentation. '), 'Dynabeads (ρ ≈ 1.4 g/cm³) settle in water at the Stokes velocity v_s = (2/9)·Δρ·g·r²/η. For a 2.8 µm M-280, v_s ≈ 2 µm/s. Over a 10 ms sensor transit the displacement is negligible (~0.02 µm), but over channel residence times of seconds it tilts the inlet distribution toward the floor.'),
+          h('li', null, h('b',null,'Brownian diffusion. '), 'Stokes–Einstein gives D = k_B T / (6πηr) ≈ 0.16 µm²/s for an M-280. Over the same residence time, beads spread by √(2Dt). Combined with gravity, this asymptotes to a Boltzmann profile P(h) ∝ exp(−Δρ·g·V·h/k_B T) — an exponentially decaying distribution toward the ceiling.'),
+          h('li', null, h('b',null,'Magnetophoretic drift. '), 'Available as an optional component in the simulator, pulls beads toward the sensor surface in proportion to the local field gradient.'),
+          h('li', null, h('b',null,'Inertial focusing (Segré–Silberberg). '), 'Requires Re ≳ 1; our regime is Re < 1 so this mechanism is suppressed.'),
+          h('li', null, h('b',null,'Flux weighting. '), 'Beads on faster streamlines cross the sensor more often per unit time, so even with uniform spatial distribution the time-averaged detected h is biased toward channel center.')
+        ),
+        'Uniform is the worst-case baseline: it gives the widest signal spread and lowest mean SNR. Sedimentation-biased reality concentrates beads near the floor, where signals are strongest, so real experiments typically out-perform the uniform-Random prediction. Users wanting to approximate sedimentation can narrow [min h, max h] toward the floor; users wanting to study the Boltzmann limit can set both bounds at the geometric minimum.'
       ),
       h('div', {className:'theory-h2 flow'}, 'Poiseuille Flow Profile'),
       h('div', {className:'theory-p'}, 'Once the bead is at vertical position y in the channel, its streamwise velocity follows the standard parabolic profile. Beads near the channel center travel fastest; beads near either wall slow to zero. In Random mode this means tall-channel samples not only produce weaker signals but also longer transit times (extra integration window).'),
