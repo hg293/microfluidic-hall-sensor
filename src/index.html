@@ -592,8 +592,8 @@ class FluidScene {
     window.addEventListener('resize', this._onResize);
   }
 
-  buildChannel(sceneLen, sceneH, sceneW) {
-    this.channelGroup.clear(); this.chLen = sceneLen;
+  buildChannel(sceneLen, sceneH, sceneW, chH_um) {
+    this.channelGroup.clear(); this.chLen = sceneLen; this.sceneH = sceneH;
     // Single channel box: the fluid path. Previously we rendered both a
     // PDMS silicone wrapper AND an inner channel, which read as two
     // nested translucent boxes instead of one device. Removed the PDMS
@@ -601,6 +601,26 @@ class FluidScene {
     const chGeo = new THREE.BoxGeometry(sceneLen, sceneH, sceneW);
     const chMat = new THREE.MeshPhysicalMaterial({color:0x22d3ee, transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false});
     this.channelGroup.add(new THREE.Mesh(chGeo, chMat)).position.y = sceneH/2;
+    // Channel-ceiling label so the user can see where H sits.
+    if (chH_um) {
+      const hc = document.createElement('canvas'); hc.width = 256; hc.height = 56;
+      const hctx = hc.getContext('2d');
+      hctx.fillStyle = '#f8fafc';
+      hctx.font = 'bold 26px JetBrains Mono';
+      hctx.fillText('H = ' + chH_um + ' µm', 6, 38);
+      const hsp = new THREE.Sprite(new THREE.SpriteMaterial({map: new THREE.CanvasTexture(hc), transparent:true, opacity:0.95}));
+      hsp.scale.set(4.8, 1.05, 1);
+      hsp.position.set(-sceneLen/2 + 2.5, sceneH + 0.55, sceneW/2 + 0.1);
+      this.channelGroup.add(hsp);
+      // Dashed marker at the ceiling so the eye anchors to that line.
+      const ceilGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-sceneLen/2, sceneH, sceneW/2),
+        new THREE.Vector3( sceneLen/2, sceneH, sceneW/2),
+      ]);
+      const ceilLine = new THREE.Line(ceilGeo, new THREE.LineDashedMaterial({color:0xf8fafc, dashSize:0.25, gapSize:0.18, transparent:true, opacity:0.7}));
+      ceilLine.computeLineDistances();
+      this.channelGroup.add(ceilLine);
+    }
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(sceneLen, sceneW * 2), new THREE.MeshStandardMaterial({color:0x3b5380, transparent:true, opacity:0.4, side:THREE.DoubleSide}));
     floor.rotation.x = -Math.PI/2; floor.position.y = 0.01; this.channelGroup.add(floor);
     const arrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(-sceneLen/2 - 2, sceneH/2, 0), 3.4, 0x67e8f9, 0.85, 0.42);
@@ -2616,8 +2636,19 @@ function App() {
 
   const visLen = Math.max(sensor.size * 25, 500e-6);
   const beadSpacing = Math.max(sensor.size * 6, visLen / (nBeads + 2));
-  const SCENE_LEN = 18, SCENE_H = 2.5, SCENE_W = 1.5;
-  const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H / chH_m, scaleZ = SCENE_W / chW_m;
+  // Scene scaling: 1 scene unit = 20 µm vertically (SCENE_H_PER_UM = 0.05).
+  // Anchored so that the historical default chH = 50 µm renders at the
+  // same visual height (SCENE_H = 2.5) as the old code. The key property
+  // of this choice is that a bead at fixed h always appears at the same
+  // scene-y regardless of chH — increasing the channel height makes the
+  // channel ceiling rise but does NOT move the bead. That fixes the
+  // earlier counterintuitive behavior where raising chH made the bead
+  // visually slide toward the sensor floor (because SCENE_H was fixed
+  // and scaleY was rescaling everything).
+  const SCENE_H_PER_UM = 0.05;
+  const SCENE_LEN = 18, SCENE_W = 1.5;
+  const SCENE_H = chH * SCENE_H_PER_UM;
+  const scaleX = SCENE_LEN / visLen, scaleY = SCENE_H_PER_UM * 1e6, scaleZ = SCENE_W / chW_m;
   const beadSceneScale = SCENE_W / (sensor.size || 10e-6); // scale bead relative to sensor width
   const rScene = Math.max(0.12, r_bead * beadSceneScale * 0.9);
   const Q_uLmin = vAvg * chW_m * chH_m * 60 * 1e6;
@@ -2639,8 +2670,11 @@ function App() {
   // ── Update geometry ──
   useEffect(() => {
     const sc = sceneRef.current; if (!sc) return;
-    sc.buildChannel(SCENE_LEN, SCENE_H, SCENE_W);
+    sc.buildChannel(SCENE_LEN, SCENE_H, SCENE_W, chH);
     sc.buildSensor(SCENE_W, 0.15, SCENE_W);
+    // Re-aim the camera at the channel centre so very tall/short channels stay framed.
+    sc.controls.target.set(0, SCENE_H / 2, 0);
+    sc.controls.update();
   }, [sensIdx, sensMode, customSensor.size, chH, page]);
 
   // ── Batch control ──
@@ -2952,13 +2986,33 @@ function App() {
             ),
           ),
 
-          // Channel
+          // Channel geometry + bead position (one physical concept: where the bead sits in the channel)
           h('div', {className:'group'},
-            h('div', {className:'group-title ch'}, 'Microfluidic Channel'),
-            h(Slider, {label:'Channel height H', value:chH, min:Math.max(10, Math.ceil(beadD_um * 2)), max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running',
-              desc:'Microchannel total height. Two roles: (1) hard upper bound for the bead height h (h \u2264 H \u2212 bead_radius); (2) sets the curvature of the Poiseuille velocity profile v(y) = (3/2)\u00b7v\u0304\u00b7[1 \u2212 (2y/H \u2212 1)\u00b2]. H itself does not enter the dipole signal formula \u2014 only h does.'}),
+            h('div', {className:'group-title ch'}, 'Channel & Bead Position'),
+            h(Slider, {label:'Channel height H', value:chH, min:Math.max(10, Math.ceil(beadD_um)), max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running',
+              desc:'Total height of the microchannel. Geometric only \u2014 it does not enter the dipole signal formula. Its job is to (a) cap how high the bead h can sit (h \u2264 H \u2212 bead_radius) and (b) shape the Poiseuille velocity profile v(y) = (3/2)\u00b7v\u0304\u00b7[1 \u2212 (2y/H \u2212 1)\u00b2].'}),
+            // Bead position \u2014 Fixed vs Random mode
+            h('div', {className:'mode-tabs', style:{marginTop:'8px',marginBottom:'4px'}},
+              h('button', {className:'mode-tab'+(heightMode==='fixed'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed h'),
+              h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random h'),
+            ),
+            heightMode === 'fixed'
+              ? h(Slider, {label:'Bead height h', value:fixedHeight, min:hMinAllowed, max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running',
+                  desc:'Bead-center distance from the sensor surface. This is the SINGLE knob that enters the Hall signal: \u0394V_H \u221d 1/h\u00b3. Bounded by the channel as bead_radius \u2264 h \u2264 H \u2212 bead_radius. Below ~1.5\u00d7 bead radius the dipole approximation starts to deviate from full-volume FEM; use the FEM Solver page to check the regime.'})
+              : h('div', null,
+                  h(Slider, {label:'Min h', value:minHeight, min:hMinAllowed, max:Math.max(hMinAllowed + 0.5, hMaxAllowed - 0.5), step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running',
+                    desc:'Lower bound for the random bead-height distribution.'}),
+                  h(Slider, {label:'Max h', value:maxHeight, min:Math.min(maxHeight, hMinAllowed + 0.5), max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running',
+                    desc:'Upper bound for the random bead-height distribution. Both bounds are auto-capped at H \u2212 bead_radius so every sampled bead fits in the channel.'}),
+                ),
+            // Derived geometry readout: shows the bead's place in the channel at a glance
+            h('div', {className:'sim-info'},
+              heightMode === 'fixed' && h('div', null, h('b',null,'h / H = '), (fixedHeight / chH).toFixed(2), '   ', h('b',null,'gap = '), (fixedHeight - beadR_um).toFixed(1), ' \u00b5m'),
+              h('div', null, h('b',null,'h range allowed: '), hMinAllowed.toFixed(1), '\u2013', hMaxAllowed.toFixed(1), ' \u00b5m   (', beadD_um.toFixed(1), ' \u00b5m bead in ', chH, ' \u00b5m channel)'),
+            ),
+            // Flow velocity (transit time, not signal magnitude)
             h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running',
-              desc:'Mean flow velocity of the fluid carrying the beads. Controls how fast beads pass over the sensor and how long the detection window lasts. Higher velocity = shorter pulses.'}),
+              desc:'Mean flow velocity. Controls how fast a bead transits the sensor (pulse width), not signal amplitude. Combined with H, sets the Poiseuille velocity at the bead\u2019s y position.'}),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'Q: '), Q_uLmin < 0.001 ? Q_uLmin.toExponential(2) : Q_uLmin.toFixed(4), ' \u00b5L/min'),
             ),
@@ -2988,29 +3042,6 @@ function App() {
               h('div', null, h('b',null,'\u03c7\u2091\u1da0\u1da0 = '), (3*(bead.mu_r-1)/(bead.mu_r+2)).toFixed(3)),
               h('div', null, h('b',null,'m = '), fmtSci(mom), ' A\u00b7m\u00b2'),
             ),
-          ),
-
-          // Height mode
-          h('div', {className:'group'},
-            h('div', {className:'group-title'}, 'Height Above Sensor'),
-            h('div', {className:'mode-tabs'},
-              h('button', {className:'mode-tab'+(heightMode==='fixed'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('fixed')}, 'Fixed'),
-              h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random'),
-            ),
-            heightMode === 'fixed'
-              ? h(React.Fragment, null,
-                  h(Slider, {label:'h (above sensor)', value:fixedHeight, min:hMinAllowed, max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running',
-                    desc:'Distance from bead center to sensor surface. This is the only height that enters the Hall signal \u2014 \u0394V_H scales as 1/h\u00b3. Bounded by the channel: bead_diameter \u2264 h \u2264 H \u2212 bead_radius. Closer = stronger signal, but below ~1.5\u00d7 bead radius the dipole approximation starts deviating from full-volume FEM (use the FEM Solver page to check).'}),
-                  h('div', {className:'sim-info', style:{fontSize:'var(--fs-xs)'}},
-                    h('div', null, h('b',null,'h / H = '), (fixedHeight / chH).toFixed(2), '  (fraction of channel height)')
-                  )
-                )
-              : h('div', null,
-                  h(Slider, {label:'Min h', value:minHeight, min:hMinAllowed, max:Math.max(hMinAllowed + 0.5, hMaxAllowed - 0.5), step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running',
-                    desc:'Lower bound for the random bead-height distribution. Capped at bead_diameter so the bead clears the sensor surface.'}),
-                  h(Slider, {label:'Max h', value:maxHeight, min:Math.min(maxHeight, hMinAllowed + 0.5), max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running',
-                    desc:'Upper bound for the random bead-height distribution. Capped at H \u2212 bead_radius so all sampled beads stay inside the channel.'}),
-                ),
           ),
 
           // CHMA
