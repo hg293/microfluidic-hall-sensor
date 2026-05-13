@@ -261,9 +261,20 @@ def fig1_architecture():
 
 def fig3_validation():
     labels = ['Design I\n(5 \u00d7 5 \u03bcm)', 'Design II\n(10 \u00d7 10 \u03bcm)', 'Design III\n(50 \u00d7 50 \u03bcm)']
+    # COMSOL FEM-BEM reference values from the companion paper
+    # (Govindaraju & Hassan, Sens. Actuators A vol. 393, 2025), Table 2.
     comsol = [21.375, 42.79, 3.056]
-    uflow  = [20.2,   42.4,  3.03]
-    errors = [5.5,    0.9,   0.9]
+    # \u00b5Flow values are NOT hardcoded \u2014 they are recomputed from the
+    # physics engine each time this script runs, so the figure is always
+    # consistent with whatever the deployed simulator computes.
+    uflow = []
+    for dname in ('I', 'II', 'III'):
+        d = DESIGNS[dname]
+        rb = d['db'] / 2.0
+        m = bead_moment(rb, MU_R, B0)
+        dvh = compute_delta_vh(RH_VAL, SIGMA_VAL, VBIAS, m, 0, 0, d['r'], d['w'], d['t'], nxy=20, nz=5)
+        uflow.append(abs(dvh) * 1e3)
+    errors = [100.0 * abs(c - u) / c for c, u in zip(comsol, uflow)]
 
     x = np.arange(len(labels))
     width = 0.32
