@@ -2568,6 +2568,13 @@ function App() {
   const [speed, setSpeed] = useState(5);
   const [, forceUpdate] = useState(0);
 
+  // ── Enforce h <= chH - bead_radius. h is the only height that enters
+  //    the signal formula (ΔV_H ∝ 1/h³); chH bounds where h can sit and
+  //    shapes the Poiseuille velocity profile, but does not enter the
+  //    signal directly. Clamp h, minHeight, and maxHeight whenever
+  //    chH or the bead diameter changes so the UI cannot present a
+  //    bead outside its channel. ──
+
   // ── Active config ──
   const isCustomMat = matIdx >= MATERIALS.length;
   const activeMat = isCustomMat ? customMat : MATERIALS[matIdx];
@@ -2582,6 +2589,28 @@ function App() {
   const r_bead = bead.d / 2;
   const vAvg = flowVel * 1e-3;
   const mom = beadMoment(r_bead, bead.mu_r, B0_T);
+
+  // ── h bounds (single source of truth, derived from chH and bead) ──
+  // h is the only height that enters the Hall signal: ΔV_H ∝ 1/h³.
+  // chH bounds where h can sit and shapes the Poiseuille profile; it
+  // does NOT enter the signal formula directly. Constraint:
+  //   bead_diameter ≤ h ≤ chH − bead_radius
+  // (lower bound keeps the bead clear of the sensor surface; upper
+  // bound keeps the bead's top inside the channel.)
+  const beadD_um = bead.d * 1e6;
+  const beadR_um = beadD_um / 2;
+  const hMinAllowed = Math.max(0.5, beadD_um);
+  const hMaxAllowed = Math.max(hMinAllowed + 0.5, chH - beadR_um);
+
+  // Clamp the three height state values whenever chH or bead size
+  // shrinks past their current setting. Function-form setters avoid
+  // stale closures and only trigger a re-render when an actual change
+  // is needed.
+  useEffect(() => {
+    setFixedHeight(prev => prev > hMaxAllowed ? hMaxAllowed : (prev < hMinAllowed ? hMinAllowed : prev));
+    setMaxHeight(prev => prev > hMaxAllowed ? hMaxAllowed : prev);
+    setMinHeight(prev => prev > hMaxAllowed - 0.5 ? Math.max(hMinAllowed, hMaxAllowed - 0.5) : (prev < hMinAllowed ? hMinAllowed : prev));
+  }, [hMinAllowed, hMaxAllowed]);
   const activeRH = mp.RH;
   const activeSigma = mp.sigma;
 
@@ -2926,8 +2955,8 @@ function App() {
           // Channel
           h('div', {className:'group'},
             h('div', {className:'group-title ch'}, 'Microfluidic Channel'),
-            h(Slider, {label:'Channel height', value:chH, min:10, max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running',
-              desc:'Height of the microfluidic channel (the enclosed tube beads flow through). Determines the Poiseuille flow profile and how close beads can pass to the sensor. Typical PDMS channels: 20\u2013100 \u00b5m.'}),
+            h(Slider, {label:'Channel height H', value:chH, min:Math.max(10, Math.ceil(beadD_um * 2)), max:200, step:5, unit:' \u00b5m', onChange:setChH, disabled:simState==='running',
+              desc:'Microchannel total height. Two roles: (1) hard upper bound for the bead height h (h \u2264 H \u2212 bead_radius); (2) sets the curvature of the Poiseuille velocity profile v(y) = (3/2)\u00b7v\u0304\u00b7[1 \u2212 (2y/H \u2212 1)\u00b2]. H itself does not enter the dipole signal formula \u2014 only h does.'}),
             h(Slider, {label:'Flow velocity v\u0304', value:flowVel, min:0.1, max:20, step:0.1, unit:' mm/s', onChange:setFlowVel, disabled:simState==='running',
               desc:'Mean flow velocity of the fluid carrying the beads. Controls how fast beads pass over the sensor and how long the detection window lasts. Higher velocity = shorter pulses.'}),
             h('div', {className:'sim-info'},
@@ -2969,13 +2998,18 @@ function App() {
               h('button', {className:'mode-tab'+(heightMode==='range'?' active':''), disabled:simState==='running', onClick:()=>setHeightMode('range')}, 'Random'),
             ),
             heightMode === 'fixed'
-              ? h(Slider, {label:'h (above sensor)', value:fixedHeight, min:Math.max(0.5, Math.ceil(bead.d*1e6*2)/1), max:50, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running',
-                  desc:'Distance from bead center to sensor surface. Must exceed bead diameter so the bead does not physically overlap the sensor. Closer = stronger stray field but the dipole model loses accuracy below ~2\u00d7 bead radius.'})
+              ? h(React.Fragment, null,
+                  h(Slider, {label:'h (above sensor)', value:fixedHeight, min:hMinAllowed, max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setFixedHeight, disabled:simState==='running',
+                    desc:'Distance from bead center to sensor surface. This is the only height that enters the Hall signal \u2014 \u0394V_H scales as 1/h\u00b3. Bounded by the channel: bead_diameter \u2264 h \u2264 H \u2212 bead_radius. Closer = stronger signal, but below ~1.5\u00d7 bead radius the dipole approximation starts deviating from full-volume FEM (use the FEM Solver page to check).'}),
+                  h('div', {className:'sim-info', style:{fontSize:'var(--fs-xs)'}},
+                    h('div', null, h('b',null,'h / H = '), (fixedHeight / chH).toFixed(2), '  (fraction of channel height)')
+                  )
+                )
               : h('div', null,
-                  h(Slider, {label:'Min h', value:minHeight, min:Math.max(0.5, Math.ceil(bead.d*1e6*2)/1), max:30, step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running',
-                    desc:'Minimum bead height in the random distribution. Clamped to at least one bead diameter above the sensor.'}),
-                  h(Slider, {label:'Max h', value:maxHeight, min:1, max:50, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running',
-                    desc:'Maximum bead height. Beads higher in the channel produce weaker signals but travel faster in Poiseuille flow.'}),
+                  h(Slider, {label:'Min h', value:minHeight, min:hMinAllowed, max:Math.max(hMinAllowed + 0.5, hMaxAllowed - 0.5), step:0.5, unit:' \u00b5m', onChange:setMinHeight, disabled:simState==='running',
+                    desc:'Lower bound for the random bead-height distribution. Capped at bead_diameter so the bead clears the sensor surface.'}),
+                  h(Slider, {label:'Max h', value:maxHeight, min:Math.min(maxHeight, hMinAllowed + 0.5), max:hMaxAllowed, step:0.5, unit:' \u00b5m', onChange:setMaxHeight, disabled:simState==='running',
+                    desc:'Upper bound for the random bead-height distribution. Capped at H \u2212 bead_radius so all sampled beads stay inside the channel.'}),
                 ),
           ),
 
