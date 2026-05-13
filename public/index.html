@@ -68,7 +68,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sidebar::-webkit-scrollbar-thumb{background:var(--primary-dim);border-radius:3px}
 .group{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--card-border)}
 .group:last-child{border-bottom:none}
-.group-title{font-size:var(--fs-sm);font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.group-title{font-size:var(--fs-sm);font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .group-title::before{content:'';width:5px;height:18px;border-radius:3px;background:var(--primary);box-shadow:0 0 12px var(--primary)}
 .group-title.mat::before{background:var(--sensor);box-shadow:0 0 12px var(--sensor)}
 .group-title.bead::before{background:var(--bead);box-shadow:0 0 12px var(--bead)}
@@ -2878,10 +2878,10 @@ function App() {
           // Material indicator
           h('div', {className:'group'},
             h('div', {className:'group-title mat'}, 'Sensor Material'),
-            h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
-              h('span', {style:{fontSize:'12px',fontWeight:600,color:isCustomMat?'#94a3b8':activeMat.color}},
+            h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',marginBottom:'6px'}},
+              h('span', {style:{fontSize:'var(--fs-sm)',fontWeight:700,color:isCustomMat?'var(--muted)':activeMat.color,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},
                 isCustomMat ? 'Custom' : activeMat.name),
-              h('button', {className:'preset-btn', style:{fontSize:'8px'}, onClick:()=>setPage('designer')}, 'Change \u2192'),
+              h('button', {className:'preset-btn', style:{fontSize:'var(--fs-xs)',padding:'4px 10px',flexShrink:0}, onClick:()=>setPage('designer')}, 'Change \u2192'),
             ),
             h('div', {className:'sim-info'},
               h('div', null, h('b',null,'R\u2095 = '), fmtSci(activeRH)),
@@ -2889,10 +2889,10 @@ function App() {
               h('div', null, h('b',null,'|S\u1d62| = '), fmtSci(mp.SI), ' V/AT'),
             ),
             // Gate voltage control (2D gate-tunable materials only)
-            activeMat.gate && h('div', {style:{marginTop:'6px',paddingTop:'6px',borderTop:'1px solid var(--card-border)'}},
-              h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'4px'}},
-                h('span', {style:{fontSize:'9px',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.5px',fontWeight:600}}, 'Gate Voltage'),
-                h('button', {className:'preset-btn', style:{fontSize:'8px',padding:'1px 6px'},
+            activeMat.gate && h('div', {style:{marginTop:'8px',paddingTop:'8px',borderTop:'1px solid var(--card-border)'}},
+              h('div', {style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',marginBottom:'6px'}},
+                h('span', {style:{fontSize:'var(--fs-xs)',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'1px',fontWeight:700}}, 'Gate Voltage'),
+                h('button', {className:'preset-btn', style:{fontSize:'var(--fs-xs)',padding:'4px 10px',flexShrink:0},
                   onClick:()=>setVg(Vg === null ? 0 : null)},
                   Vg === null ? 'Enable' : 'Off'),
               ),
