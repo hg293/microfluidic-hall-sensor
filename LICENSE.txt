@@ -1,22 +1,344 @@
-MIT License
+µFLOW SOFTWARE LICENSE AGREEMENT
+Version 2.0  —  Effective 2026-05-19
 
-Copyright (c) 2025-2026 Harshitha Govindaraju and Umer Hassan
-Department of Electrical and Computer Engineering, Rutgers University
+Copyright (c) 2025-2026  Harshitha Govindaraju and Umer Hassan
+Department of Electrical and Computer Engineering
+Rutgers, The State University of New Jersey
+94 Brett Road, Piscataway, NJ 08854, USA
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ALL RIGHTS RESERVED.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+================================================================
+PREAMBLE
+================================================================
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+The µFlow software ("the Software") is a research instrument developed
+at Rutgers, The State University of New Jersey for the modeling of
+microfluidic Hall-effect magnetic bead detection. It comprises the
+hosted browser application at https://uflow.studio (or such successor
+URL as the Licensors may designate), the source code repository at
+https://github.com/hg293/microfluidic-hall-sensor, the LaTeX manuscript
+sources, generated figures, supporting bibliographic data, and any
+documentation, build scripts, configuration, or auxiliary materials
+distributed together with the foregoing.
+
+This License is a non-permissive, non-open-source license granted by
+the Licensors solely to enable scientific researchers to evaluate
+microfluidic Hall sensor designs by interactively using the hosted
+application. It is not an Open Source Initiative ("OSI") approved
+license. By accessing, using, downloading, or otherwise interacting
+with any portion of the Software, you ("the Licensee" or "you") agree
+to be bound by every term of this License. If you do not accept these
+terms, you must immediately discontinue all access to and use of the
+Software.
+
+================================================================
+1. GRANT OF LIMITED LICENSE
+================================================================
+
+Subject to your continuing compliance with every term of this License,
+the Licensors grant you a personal, non-exclusive, non-transferable,
+non-sublicensable, revocable, royalty-free, time-limited license to:
+
+  (a) Access the hosted Software at https://uflow.studio through a
+      standard web browser;
+
+  (b) Use the interactive features of the hosted Software to enter
+      sensor, bead, channel, flow, and field parameters, view the
+      computed Hall voltage response, run parametric sweeps, and
+      export numerical results and screenshots as supported by the
+      application;
+
+  (c) Include numerical results and screenshots that you generate
+      through use of the hosted Software in your own non-commercial
+      academic research outputs, subject to the citation requirement
+      in Section 4;
+
+  (d) View the publicly hosted source code on GitHub for the limited
+      purposes of (i) verifying the physical model and computational
+      methods underlying the Software, and (ii) supporting peer
+      review of the associated scholarly publications.
+
+No other rights are granted, expressly, implicitly, by estoppel, or
+otherwise. All rights not expressly granted are reserved by the
+Licensors.
+
+================================================================
+2. EXPRESS RESTRICTIONS
+================================================================
+
+You shall NOT, in whole or in part:
+
+  (a) Copy, reproduce, mirror, fork, distribute, publish, transmit,
+      upload, or otherwise convey any portion of the Software's
+      source code, including without limitation its JavaScript, HTML,
+      CSS, build scripts, configuration files, LaTeX manuscript
+      sources, figures, bibliographic database, helper scripts, or
+      any associated documentation, to any third party or to any
+      public or private repository, by any means whatsoever;
+
+  (b) Modify, adapt, translate, port, decompose, refactor, or create
+      derivative works of any portion of the Software;
+
+  (c) Decompile, disassemble, reverse engineer, or otherwise attempt
+      to discover the source code, algorithms, internal data
+      structures, or trade secrets of the Software beyond what is
+      strictly necessary to operate the hosted application as a
+      consumer of its outputs;
+
+  (d) Use the Software, in whole or in part, for any commercial
+      purpose, including without limitation the provision of fee-
+      based services, the integration of any portion of the Software
+      or its outputs into a commercial product, or the sale, lease,
+      rental, or licensing of the Software's outputs to third
+      parties;
+
+  (e) Use the Software or any output it produces to design, train,
+      validate, benchmark, or otherwise develop a competing
+      microfluidic, Hall-effect, magnetic-bead, or biosensor
+      simulation product, service, or computational tool;
+
+  (f) Use the Software, its outputs, or any portion of its source as
+      training data, fine-tuning data, retrieval-augmented context,
+      or evaluation data for any machine-learning model, language
+      model, or other artificial intelligence system;
+
+  (g) Sublicense, rent, lease, lend, transfer, assign, or otherwise
+      grant any rights in the Software to any third party;
+
+  (h) Remove, alter, suppress, or obscure any copyright notice,
+      trademark, attribution, license text, watermark, or other
+      proprietary marking contained in or on the Software, the
+      hosted application, the source repository, or any output
+      thereof;
+
+  (i) Use the Software in any manner that could reasonably be
+      expected to damage, disable, overburden, degrade, or interfere
+      with the operation of the hosted deployment infrastructure,
+      including but not limited to scripted bulk requests, automated
+      crawling, or denial-of-service activity;
+
+  (j) Use the Software in any manner that violates applicable law,
+      including export control, sanctions, privacy, and academic
+      integrity regulations;
+
+  (k) Misrepresent the origin, authorship, or scientific provenance
+      of the Software or its outputs.
+
+================================================================
+3. PERMITTED RESEARCH USE
+================================================================
+
+For the avoidance of doubt, the following uses are expressly
+permitted under Section 1:
+
+  (a) Loading https://uflow.studio in a web browser, entering
+      parameters via the sidebar controls, and reading the rendered
+      Hall voltage output, 3D scene, and parametric sweep tables on
+      screen.
+
+  (b) Capturing screenshots of the hosted application and including
+      them in academic theses, dissertations, conference posters,
+      and peer-reviewed journal articles, subject to the citation
+      requirement of Section 4.
+
+  (c) Exporting CSV files produced by the Analysis page and
+      including the contained numerical data in academic
+      publications, provided the citation requirement of Section 4
+      is satisfied.
+
+  (d) Discussing the physical model, computational methods, and
+      validation results of the Software in academic and educational
+      settings, including in classroom lectures, seminars, and
+      tutorial sessions, provided that no portion of the source code
+      is redistributed.
+
+================================================================
+4. CITATION REQUIREMENT
+================================================================
+
+You shall cite the Software in any scholarly, scientific, or public
+output that incorporates, references, or relies upon any output
+generated through use of the Software. The required citation form is:
+
+    Govindaraju, H. and Hassan, U.
+    "µFlow: An interactive browser-based 3D simulator for
+    microfluidic Hall-effect magnetic bead detection."
+    https://uflow.studio  (and the accompanying peer-reviewed
+    publication once available).
+
+The citation requirement is a material term of this License. Failure
+to cite the Software in any output constitutes a breach of this
+License and grounds for immediate termination under Section 9.
+
+================================================================
+5. INTELLECTUAL PROPERTY AND CONFIDENTIALITY
+================================================================
+
+The Software, including but not limited to its source code,
+computational model, parameter database, visualization framework,
+figure generation pipeline, and accompanying documentation, is the
+sole and exclusive property of the Licensors and/or Rutgers, The
+State University of New Jersey. All rights, title, and interest in
+and to the Software remain with the Licensors. No transfer of
+intellectual property rights is effected by this License.
+
+The Software contains, and is associated with, scientific work that
+may be the subject of pending publications, patent applications,
+trade secrets, or other forms of intellectual property protection.
+You acknowledge and agree that the publicly accessible source code
+is provided for transparency and reproducibility audit only; you
+shall not extract, republish, paraphrase, or disseminate undisclosed
+algorithmic detail, calibration constants, or implementation choices
+that have not yet been published by the Licensors in a peer-reviewed
+forum.
+
+================================================================
+6. ATTRIBUTION OF DERIVED OUTPUTS
+================================================================
+
+Outputs generated through use of the hosted Software (numerical
+results, exported CSVs, screenshots, computed peak Hall voltages,
+parametric sweep tables, batch-mode statistics) constitute derived
+materials. You may use such derived materials for non-commercial
+academic research, subject to the citation requirement of Section 4
+and the express restrictions of Section 2.
+
+You may not represent derived outputs as having been generated by
+your own software, nor remove indications of their µFlow origin from
+embedded screenshots or exported metadata.
+
+================================================================
+7. NO WARRANTY
+================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITH ALL FAULTS
+AND WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS, IMPLIED, OR
+STATUTORY, INCLUDING WITHOUT LIMITATION ANY WARRANTY OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY,
+COMPLETENESS, RELIABILITY, AVAILABILITY, TITLE, NON-INFRINGEMENT, OR
+QUIET ENJOYMENT. THE LICENSORS MAKE NO REPRESENTATION OR WARRANTY
+THAT THE SOFTWARE WILL MEET YOUR REQUIREMENTS, THAT ITS OPERATION
+WILL BE UNINTERRUPTED OR ERROR-FREE, OR THAT ITS COMPUTATIONAL
+RESULTS WILL BE ACCURATE FOR YOUR PARTICULAR USE CASE.
+
+THE SOFTWARE IS A RESEARCH PROTOTYPE INTENDED TO ASSIST WITH
+SENSOR DESIGN EXPLORATION. IT IS NOT A MEDICAL DEVICE, NOT A
+CERTIFIED METROLOGY INSTRUMENT, AND MUST NOT BE USED AS THE SOLE
+BASIS FOR ANY CLINICAL, REGULATORY, OR SAFETY-CRITICAL DECISION.
+RESULTS GENERATED BY THE SOFTWARE SHOULD BE INDEPENDENTLY
+VALIDATED BEFORE BEING ACTED UPON.
+
+================================================================
+8. LIMITATION OF LIABILITY
+================================================================
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT
+SHALL THE LICENSORS, RUTGERS, THE STATE UNIVERSITY OF NEW JERSEY,
+OR THEIR RESPECTIVE OFFICERS, EMPLOYEES, AGENTS, OR AFFILIATES BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES (INCLUDING BUT NOT LIMITED TO
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; BUSINESS INTERRUPTION; PERSONAL INJURY; OR PROPERTY
+DAMAGE) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE SOFTWARE OR
+ITS OUTPUTS, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+YOUR SOLE AND EXCLUSIVE REMEDY FOR ANY DISSATISFACTION WITH THE
+SOFTWARE IS TO DISCONTINUE USE OF THE SOFTWARE.
+
+================================================================
+9. TERMINATION
+================================================================
+
+This License is effective until terminated. Your rights under this
+License will terminate automatically and immediately, without notice
+from the Licensors, upon any breach by you of any term of this
+License. The Licensors reserve the right to revoke this License at
+any time and for any reason, with or without notice.
+
+Upon termination, you must immediately:
+
+  (a) cease all use of the Software;
+  (b) destroy any copies of the Software, its outputs, or its
+      derivative materials in your possession or control;
+  (c) certify in writing to the Licensors, upon their request, that
+      you have complied with the foregoing.
+
+The provisions of Sections 2, 5, 7, 8, 10, 11, and 12 shall survive
+any termination of this License.
+
+================================================================
+10. EXPORT CONTROL
+================================================================
+
+You shall not, directly or indirectly, export, re-export, transfer,
+or release any portion of the Software in violation of U.S. export
+control laws and regulations, including but not limited to the
+Export Administration Regulations and the International Traffic in
+Arms Regulations. You represent and warrant that you are not located
+in, under the control of, or a national or resident of any country
+or region against which the United States maintains a comprehensive
+trade embargo, and that you are not listed on any U.S. Government
+denied-party or sanctioned-party list.
+
+================================================================
+11. GOVERNING LAW AND JURISDICTION
+================================================================
+
+This License shall be governed by and construed in accordance with
+the laws of the State of New Jersey, United States of America,
+without giving effect to any choice of law or conflict of law
+provision. Any disputes, claims, or controversies arising out of or
+relating to this License or the Software shall be resolved
+exclusively in the state or federal courts located in Middlesex
+County, New Jersey, and you irrevocably consent to the personal
+jurisdiction and venue of those courts.
+
+================================================================
+12. ENTIRE AGREEMENT
+================================================================
+
+This License constitutes the entire agreement between you and the
+Licensors with respect to the Software and supersedes all prior or
+contemporaneous communications, proposals, agreements, or licenses
+(whether oral or written) between the parties regarding the
+Software, including without limitation any prior MIT License
+previously distributed with the Software. No amendment or waiver of
+any provision of this License shall be effective unless in writing
+and signed by an authorized representative of the Licensors.
+
+If any provision of this License is held to be invalid or
+unenforceable by a court of competent jurisdiction, the remaining
+provisions shall remain in full force and effect, and the invalid
+or unenforceable provision shall be reformed to the minimum extent
+necessary to make it valid and enforceable while preserving its
+original intent.
+
+================================================================
+13. CONTACT FOR LICENSING
+================================================================
+
+For inquiries about commercial licensing, extended-use licensing,
+collaboration arrangements, or any other matter not covered by the
+permitted uses in Section 1, contact:
+
+    Harshitha Govindaraju  (Corresponding Licensor)
+    Department of Electrical and Computer Engineering
+    Rutgers, The State University of New Jersey
+    94 Brett Road, Piscataway, NJ 08854, USA
+    Email: harshitha.govindaraju@rutgers.edu
+
+    Umer Hassan  (Co-Licensor and Supervising Faculty)
+    Department of Electrical and Computer Engineering
+    Rutgers, The State University of New Jersey
+    Email: umer.hassan@rutgers.edu
+
+================================================================
+END OF LICENSE
+================================================================
+
+By accessing, using, downloading, or otherwise interacting with any
+portion of the Software you acknowledge that you have read this
+License, understand it, and agree to be bound by its terms.

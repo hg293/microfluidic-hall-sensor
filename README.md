@@ -131,7 +131,7 @@ And the companion COMSOL FEM-BEM study that the analytical model is validated ag
 |-----|-------------|-------|
 | C1  | Current code version | v1.0 |
 | C2  | Repository | https://github.com/hg293/microfluidic-hall-sensor |
-| C3  | Legal Code License | MIT |
+| C3  | Legal Code License | Proprietary — see [`LICENSE.txt`](LICENSE.txt). Research use of the hosted application at `https://uflow.studio` only; source-code copying, modification, redistribution, derivative works, and commercial use are prohibited. |
 | C4  | Code versioning system | git |
 | C5  | Languages, tools, services | JavaScript (ES2020), HTML5, CSS3, React 18 (UMD), Three.js r160 (WebGL 2), HTML5 Canvas 2D |
 | C6  | Compilation requirements / dependencies | Modern web browser with WebGL 2 (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+). No installation or server required. |
@@ -151,4 +151,12 @@ This work was supported by the Department of Electrical and Computer Engineering
 
 ## License
 
-MIT — see [`LICENSE.txt`](LICENSE.txt).
+Proprietary research-use license. **Not open source.** See [`LICENSE.txt`](LICENSE.txt) for the full agreement. Brief summary:
+
+- You **may** access the hosted application at `https://uflow.studio` in a web browser, enter parameters, view results, capture screenshots, export CSV data, and cite the resulting numbers in academic publications.
+- You **may not** copy, redistribute, mirror, fork, modify, decompile, or create derivative works of any portion of the source code, manuscript, figures, or build scripts.
+- You **may not** use the software, its outputs, or any portion of its source for any commercial purpose, for training/fine-tuning/evaluating AI models, or for developing a competing simulation tool.
+- The publicly hosted source is provided for verification and peer-review purposes only.
+- Citation of the µFlow software and the associated peer-reviewed publication is required in any output that uses it.
+
+For licensing inquiries beyond the permitted research use, contact `harshitha.govindaraju@rutgers.edu`.

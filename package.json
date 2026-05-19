@@ -23,10 +23,11 @@
   "contributors": [
     "Umer Hassan <umer.hassan@rutgers.edu>"
   ],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "private": true,
   "type": "module",
   "bugs": {
     "url": "https://github.com/hg293/microfluidic-hall-sensor/issues"
   },
-  "homepage": "https://microfluidic-hall-sensor.vercel.app"
+  "homepage": "https://uflow.studio"
 }
