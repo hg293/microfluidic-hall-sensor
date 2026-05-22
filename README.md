@@ -2,7 +2,7 @@
 
 An interactive browser-based 3D simulator for microfluidic Hall-effect detection of superparamagnetic magnetic beads.
 
-**Live application:** https://microfluidic-hall-sensor.vercel.app
+**Live application:** https://uflow.studio
 
 µFlow couples four analytical physics modules (Clausius–Mossotti bead magnetization with volume-fraction correction, point-dipole stray field, volume-averaged Hall voltage with geometric correction, and Poiseuille flow with adaptive sub-stepping) and a thermal / 1/f noise framework across a database of 12 Hall-sensor platforms. The analytical model reproduces COMSOL FEM-BEM benchmarks within 6% for three validated sensor designs. A built-in 2D axisymmetric magnetostatic FEM solver provides an independent volumetric-field check on the dipole approximation.
 
@@ -27,7 +27,7 @@ The entire application is a single HTML file built on React 18 and Three.js r160
 
 ### Option 1: Use the live application
 
-Open https://microfluidic-hall-sensor.vercel.app in any desktop browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+). A mobile notice is shown on small screens, since the 3D simulator requires a desktop or laptop.
+Open https://uflow.studio in any desktop browser (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+). A mobile notice is shown on small screens, since the 3D simulator requires a desktop or laptop.
 
 ### Option 2: Run locally
 
