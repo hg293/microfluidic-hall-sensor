@@ -23,8 +23,7 @@
   "contributors": [
     "Umer Hassan <umer.hassan@rutgers.edu>"
   ],
-  "license": "SEE LICENSE IN LICENSE.txt",
-  "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "bugs": {
     "url": "https://github.com/hg293/microfluidic-hall-sensor/issues"
