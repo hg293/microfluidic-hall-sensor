@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the software (this record) and the accompanying paper."
+title: "uFlow: an analytical model and browser-based simulator for microfluidic Hall-effect magnetic-bead detection"
+abstract: >-
+  uFlow is an open, browser-based implementation of a coupled closed-form
+  analytical model for microfluidic Hall-effect detection of superparamagnetic
+  beads. It spans bead magnetization, point-dipole stray field, volume-averaged
+  Hall voltage, Poiseuille transport, and a Johnson-Nyquist / Hooge 1/f noise
+  framework across a database of 12 sensor platforms, with an in-app 2D
+  axisymmetric magnetostatic FEM solver that quantifies where the dipole
+  approximation degrades.
+type: software
+authors:
+  - family-names: Govindaraju
+    given-names: Harshitha
+    affiliation: "Department of Electrical and Computer Engineering, Rutgers, The State University of New Jersey"
+    # orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"   # TODO: add ORCID before submission
+  - family-names: Hassan
+    given-names: Umer
+    affiliation: "Department of Electrical and Computer Engineering, Rutgers, The State University of New Jersey"
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/hg293/microfluidic-hall-sensor"
+url: "https://uflow.studio"
+version: "1.0"               # TODO: confirm the tag cut at release
+date-released: "2026-06-02"  # TODO: set to the actual Zenodo release date
+keywords:
+  - microfluidics
+  - Hall effect
+  - magnetic bead detection
+  - biosensor
+  - analytical model
+  - scientific visualization
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"   # TODO: add the Zenodo concept DOI once minted
