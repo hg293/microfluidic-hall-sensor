@@ -1,0 +1,15 @@
+# Node dependencies
+node_modules/
+
+# Local literature library (large, third-party PDFs — not for redistribution)
+papers/
+
+# Local tooling / agent / editor state
+.claude/
+.mcp.json
+.playwright-mcp/
+comsol_blog/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
