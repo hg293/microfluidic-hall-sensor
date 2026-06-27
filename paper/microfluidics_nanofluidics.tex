@@ -228,6 +228,7 @@ The model is parameterized by a database of 12 Hall sensor platforms spanning gr
 \label{tab:materials}
 \centering
 \footnotesize
+\resizebox{\columnwidth}{!}{%
 \begin{tabular}{@{}lrrl@{}}
 \toprule
 Material & $\mu$ (cm$^2$/Vs) & $S_I$ or $R_H$ & Refs. \\
@@ -252,7 +253,8 @@ Si CMOS & 1{,}400 & $6.3{\times}10^{-4}$\,m$^3$/C & \citep{besse2002,boero2003} 
 Bismuth & 15{,}000 & $2.1{\times}10^{-5}$\,m$^3$/C & \citep{komnik1975,heremans1993} \\
 Bi$_2$Se$_3$ TI & 3{,}000 & 312\,V/AT & \citep{saeed2024,koirala2015} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 Because $\Delta V_H \propto \mu\, S_I\, \langle B_z \rangle\, V_{\text{bias}}$ and $S_I \propto 1/n_s$, the Hall voltage tracks carrier mobility for a given geometry. The bead library (Table~\ref{tab:beads}) includes commercial superparamagnetic beads used in immunoassay and the pure-magnetite beads of the COMSOL validation study \citep{govindaraju2025}.
